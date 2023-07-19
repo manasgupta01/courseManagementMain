@@ -74,8 +74,8 @@ const courseSchema = new mongoose.Schema({
 	startDate: 			{ type: Date },
 	endDate: 				{ type: Date },
 
-	createdBy:			{ type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-	creationDate:		{ type: Date, required: true, default: Date.now },
+	 createdBy:			{ type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+	 creationDate:		{ type: Date, required: true, default: Date.now },
 
 	managers: 			[ { type: managerSchema } ],
 	material:				[ { type: materialSchema } ],

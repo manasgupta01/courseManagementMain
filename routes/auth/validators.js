@@ -72,6 +72,29 @@ const usernameSchema = Joi.string()
 		'string.pattern.base': 'Username should contain only alphanumeric characters and underscores, starting with an alphabet or an underscore.'
 	})
 
+	const firstnameSchema = Joi.string()
+	.min(3)
+	.required()
+	.regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
+	.messages({
+		'string.base': 'Username should be a string.',
+		'string.empty': 'Username cannot be empty.',
+		'string.min': 'Username should have a minimum length of 3 characters.',
+		'string.pattern.base': 'Username should contain only alphanumeric characters and underscores, starting with an alphabet or an underscore.'
+	})
+
+	const lastnameSchema = Joi.string()
+	.min(3)
+	.required()
+	.regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
+	.messages({
+		'string.base': 'Username should be a string.',
+		'string.empty': 'Username cannot be empty.',
+		'string.min': 'Username should have a minimum length of 3 characters.',
+		'string.pattern.base': 'Username should contain only alphanumeric characters and underscores, starting with an alphabet or an underscore.'
+	})
+
+
 // Define the schema for college
 const collegeSchema = Joi.string()
 	.trim()
@@ -110,6 +133,9 @@ const loginValidator = Joi.object({
 const signupValidator = Joi.object({
 	name: nameSchema,
 	username: usernameSchema,
+	firstname: firstnameSchema,
+	lastname:lastnameSchema,
+	phone:phoneSchema,
 	email: emailSchema,
 	college: collegeSchema,
 	password: passwordSchema

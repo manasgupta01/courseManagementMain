@@ -1,6 +1,7 @@
 // External Import
 const express = require('express')
 
+const jwt = require('jsonwebtoken');
 // Database
 const { Course, FEEDBACKTYPE_CODES, REGISTRATIONSTATUS_CODES, MANAGERROLE_CODES } = require('../../db/models/course/model')
 
@@ -21,7 +22,7 @@ const { USERROLE_CODES } = require('../../db/models/user/model')
 const router = express.Router()
 
 // Middleware to check for valid JWT token in header (authorization)
-router.use(checkJwt)
+//router.use(checkJwt)
 
 /** Route to create a new course, allowed only by the SUPERADMINS.
  * @swagger
@@ -82,32 +83,51 @@ router.use(checkJwt)
  *         description: Same as 200 but no data returned
  */
 router.post('/', async (req, res) => {
-	const { userId, role } = req
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-	// check if role is valid
-	if (role != USERROLE_CODES.SUPERADMIN) {
-		res.status(403).json(generateResponseMessage("error", "not allowed for this role."))
-	}
+  if (!token) {
+    return res.status(401).json(generateResponseMessage('error', 'Unauthorized, missing auth token.'));
+  }
 
-	// validate the params
-	createCourseValidator.validate(req.params)
+  try {
+    // Decode the JWT token to get the user information
+    const decodedToken = jwt.verify(token, 'aspireinfoz');
+		console.log('Decoded Token:', decodedToken);
+    const { role,id } = decodedToken;
+    const { title, subtitle, description, tags } = req.body;
 
-	const { title, subtitle, description, tags } = req.body
+    // Check if role is valid (only SUPERADMIN can create a course)
+    if (role !== USERROLE_CODES.SUPERADMIN) {
+      return res.status(403).json(generateResponseMessage('error', 'Not allowed for this role.'));
+    }
 
-	let another = [1, 3]
-	console.log(typeof title, typeof subtitle, typeof description, typeof tags, typeof another)
+    // Validate the request body
+    createCourseValidator.validate(req.body);
 
-	try {
-		// Create a new Course with the data
-		const newCourseObject = { title, subtitle, description, tags, createdBy: userId, managers: [ { managerId: userId, role: MANAGERROLE_CODES.COORDINATOR } ] }
-		const newCourse = new Course(newCourseObject)
-		newCourse.save()
-		res.status(200).json(generateResponseMessage("success", newCourse))
-	} catch (err) {
-		logger.error(err)
-		res.status(500).json(generateResponseMessage("error", err))
-	}
-})
+    // Create a new Course with the data
+    const newCourseObject = {
+      title,
+      subtitle,
+      description,
+      tags,
+      createdBy: id,
+      managers: [{ managerId: id, role: MANAGERROLE_CODES.COORDINATOR }],
+    };
+
+    const newCourse = new Course(newCourseObject);
+    await newCourse.save();
+
+    // Convert the Mongoose document to a plain JavaScript object
+    const newCourseData = newCourse.toObject();
+
+    res.status(200).json(generateResponseMessage('success', newCourseData));
+  } catch (err) {
+    logger.error(err);
+    res.status(500).json(generateResponseMessage('error', err));
+  }
+});
+
 
 
 // // Create a new course

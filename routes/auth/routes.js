@@ -442,9 +442,9 @@ router.post("/login", async (req, res) => {
 			res.status(406).json({ message: 'User login incomplete, request not accepted.' })
 		}
 
-		// issue token
+		// issue toke
 		const tokenPayload = {
-			id: userDBObject.id,
+			id: userDBObject._id,
 			firstname: userDBObject.firstname,
 			lastname: userDBObject.lastname,
 			email: userDBObject.email,
@@ -551,7 +551,7 @@ router.post("/login", async (req, res) => {
 router.post("/signup", async (req, res) => {
 
 	// body params
-	const { name, username, email, college, password, confirmPassword } = req.body
+	const { name, username, email, college, password, confirmPassword,phone,firstname,lastname } = req.body
 
 	if(password !== confirmPassword) {
 		res.status(400).json(generateResponseMessage("error", "Passwords do not match"))
@@ -599,7 +599,7 @@ router.post("/signup", async (req, res) => {
 		const hashedPassword = await hashPassword(password)
 
 		// Create a new User object with the validated form data and hashed password
-		const newUserObject = { name, email, username, password: hashedPassword, college, otp: randomString }
+		const newUserObject = { name, email, username, password: hashedPassword, college, otp: randomString,firstname,lastname,phone }
 
 		// Save the new user's data to the database
 		const newUser = new User(newUserObject)

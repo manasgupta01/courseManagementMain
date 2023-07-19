@@ -15,7 +15,7 @@ const logger = require("./logger");
 const checkJwt = (req, res, next) => {
   // Get the JWT token from the Authorization header
   const authHeader = req.headers.authorization
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader || !authHeader.startsWith('Bearer')) {
     res.status(401).json({ message: 'Unauthorized, invalid auth token.' })
   }
   const token = authHeader.slice(7)
