@@ -140,37 +140,11 @@ router.post("/", async (req, res) => {
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     Course:
- *       type: object
- *       properties:
- *         title:
- *           type: string
- *           description: The title of the course.
- *         subtitle:
- *           type: string
- *           description: The subtitle of the course.
- *         description:
- *           type: string
- *           description: The description of the course.
- *         tags:
- *           type: array
- *           items:
- *             type: string
- *           description: Tags associated with the course.
- *       required:
- *         - title
- *         - description
- *         - subtitle
- *         - tags
- */
-
-/**
- * @swagger
  * /course/all:
  *   get:
  *     summary: Get all courses.
+ *     tags:
+ *       - course
  *     description: Retrieve a list of all courses available in the system.
  *     responses:
  *       200:
@@ -261,14 +235,14 @@ router.get("/details/:id", async (req, res) => {
   const authHeader = req.headers["authorization"];
   //console.log(authHeader);
   const token = authHeader && authHeader.split(" ")[1];
- // console.log(token);
+  // console.log(token);
   if (!token) {
     return res
       .status(401)
       .json(
         generateResponseMessage("error", "Unauthorized, missing auth token.")
       );
-   }
+  }
 
   // const userId = req.userId // from the middleware checkJWT
   // const userExists = await isUserActive(userId)
@@ -288,6 +262,154 @@ router.get("/details/:id", async (req, res) => {
     res.status(200).json(course);
   } catch (err) {
     res.status(500).json({ msg: err.message });
+  }
+});
+
+
+
+/**
+ * @swagger
+ * /course/update/{id}:
+ *   put:
+ *     summary: Update course details by ID.
+ *     description: Update the details of a course by its ID. This route is allowed only for SUPERADMIN users.
+ *     tags:
+ *      - course
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course to update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Aspire JavaScript Course - Intermediate
+ *               subtitle:
+ *                 type: string
+ *                 example: Learn Advanced JS Concepts
+ *               description:
+ *                 type: string
+ *                 example: An intermediate level course for mastering JavaScript.
+ *               material:
+ *                 type: string
+ *                 example: Textbook, Online Resources, Exercises
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful operation. Returns the updated details of the course.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'
+ *       401:
+ *         description: Unauthorized. The request lacks valid authentication credentials.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized, missing auth token.
+ *       403:
+ *         description: Forbidden. The user does not have the required role for updating courses.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Not allowed for this role.
+ *       404:
+ *         description: Not Found. The course with the specified ID was not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Course not found
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Error updating course.
+ * 
+ */
+router.put("/update/:id", async (req, res) => {
+  console.log("Route reached");
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res
+      .status(401)
+      .json(
+        generateResponseMessage("error", "Unauthorized, missing auth token.")
+      );
+  }
+  try {
+
+		const decodedToken = jwt.verify(token, "aspireinfoz");
+    console.log("Decoded Token:", decodedToken);
+    const { role } = decodedToken;
+
+    // Check if role is valid (only SUPERADMIN can create a course)
+    if (role !== USERROLE_CODES.SUPERADMIN) {
+      return res
+        .status(403)
+        .json(generateResponseMessage("error", "Not allowed for this role."));
+    }
+
+    // Validate the request body
+    createCourseValidator.validate(req.body);
+
+    const courseId = req.params.id;
+    const { title, subtitle, description, material } = req.body;
+    console.log(courseId);
+
+    const updatedCourse = await Course.findOneAndUpdate(
+      { _id: courseId }, // Use "_id" to match the document by its ID
+      { title },
+      { subtitle },
+      { description },
+      { material },
+      { new: true }
+    );
+
+    if (updatedCourse) {
+      return res.status(200).json(updatedCourse);
+    } else {
+      return res.status(404).json({ message: "Course not found" });
+    }
+  } catch (error) {
+    console.error("Error updating course:", error);
+    return res.status(500).json({ message: "Error updating course" });
   }
 });
 
