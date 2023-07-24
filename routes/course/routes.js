@@ -5,8 +5,10 @@ const jwt = require("jsonwebtoken");
 const {
   Course,
   MANAGERROLE_CODES,
-	 REGISTRATIONSTATUS_CODES
+  REGISTRATIONSTATUS_CODES,
 } = require("../../db/models/course/model");
+
+const { User } = require("../../db/models/user/model");
 
 // Validators
 const { createCourseValidator } = require("./validators");
@@ -144,28 +146,39 @@ router.post("/", async (req, res) => {
     // Handle different types of errors and return appropriate response messages
     if (err instanceof jwt.JsonWebTokenError) {
       // JWT token error
-      return res.status(401).json(generateResponseMessage("error", "Invalid token"));
+      return res
+        .status(401)
+        .json(generateResponseMessage("error", "Invalid token"));
     } else if (err instanceof jwt.TokenExpiredError) {
       // JWT token expired error
-      return res.status(401).json(generateResponseMessage("error", "Token expired"));
+      return res
+        .status(401)
+        .json(generateResponseMessage("error", "Token expired"));
     } else if (err.name === "ValidationError") {
       // Validation error in the request body
-      return res.status(500).json(generateResponseMessage("error", "Validation Error"));
+      return res
+        .status(500)
+        .json(generateResponseMessage("error", "Validation Error"));
     } else {
       // Other internal server errors
       logger.error(err);
-      return res.status(500).json(generateResponseMessage("error", "Internal Server Error"));
+      return res
+        .status(500)
+        .json(generateResponseMessage("error", "Internal Server Error"));
     }
   }
 });
+
 /**
- * @swagger
+ * @swagger 
  * /course/all:
  *   get:
  *     summary: Get all courses.
  *     tags:
  *       - course
  *     description: Retrieve a list of all courses available in the system.
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
  *     responses:
  *       200:
  *         description: Successful operation. Returns an array of course objects.
@@ -174,7 +187,7 @@ router.post("/", async (req, res) => {
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Course'
+ *                 $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
  *       204:
  *         description: No Content. There are no courses found in the system.
  *         content:
@@ -195,6 +208,32 @@ router.post("/", async (req, res) => {
  *                 message:
  *                   type: string
  *                   example: Invalid request parameters
+ *       401:
+ *         description: Unauthorized. Missing auth token or invalid token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized, missing or invalid auth token
+ *       403:
+ *         description: Forbidden. Invalid user role.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Forbidden, invalid user role
  *       500:
  *         description: Internal Server Error. An error occurred while processing the request.
  *         content:
@@ -205,33 +244,97 @@ router.post("/", async (req, res) => {
  *                 message:
  *                   type: string
  *                   example: Internal Server Error.
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         createdBy:
+ *           type: string
+ *         registrations:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
+ *                 type: string
+ *               feedback:
+ *                 type: array
+ *                 items:
+ *                   type: string
  */
 router.get("/all", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ error: true, message: "Unauthorized, missing auth token." });
+  }
+
   try {
-    // Fetch all courses from the database
-    const courses = await Course.find();
+    // Decode the JWT token to get the user information
+    const decodedToken = jwt.verify(token, "aspireinfoz");
+    console.log("Decoded Token:", decodedToken);
 
-    // Check if any courses were found
-    if (courses.length === 0) {
-      return res.status(204).json({ message: "No courses found" });
+    const userId = decodedToken.id;
+    const userRole = decodedToken.role; // Assuming the role is specified in the token
+    console.log("manasgupta", userId, userRole);
+    if (!userId || userRole.length == 0) {
+      return res
+        .status(400)
+        .json({ error: true, message: "User ID or Role not found in token" });
     }
 
-    // Return the courses as a JSON response
-    res.status(200).json(courses);
-  } catch (err) {
-    // Handle different types of errors and return appropriate response messages
-    if (err.name === "MongoError" && err.code === 18) {
-      // Mongoose Validation Error
-      return res.status(400).json({ message: "Invalid request parameters" });
+    if (userRole === 1) {
+      // If the user is an admin, fetch all courses with full details
+      const courses = await Course.find().populate("createdByDetails"); // Populate createdByDetails
+      if (courses.length === 0) {
+        return res.status(204).json({ message: "No courses found" });
+      }
+      return res.status(200).json(courses);
+    } else if (userRole === 0) {
+      // If the user is a student, fetch only necessary details for each course
+      const courses = await Course.find({ status: 1 })
+        .select(
+          "-status -registrations.state -registrations.requestedAt -registrations._id -managers -material -rating -tags -creationDate -__v "
+        )
+        .populate(
+          "createdBy",
+          "-password -firstname -lastname -phone -college -interests -status -role -createdAt -__v"
+        )
+        .populate({
+          path: "registrations",
+          match: { state: 1 }, // Only include registrations with state === 1
+        }); // Populate createdByDetails
+      if (courses.length === 0) {
+        return res.status(204).json({ message: "No courses found" });
+      }
+      return res.status(200).json(courses);
     } else {
-      // Other internal server errors
-      console.error("Error fetching courses:", err);
-      return res.status(500).json({ message: "Internal Server Error" });
+      return res
+        .status(403)
+        .json({ error: true, message: "Forbidden, invalid user role" });
     }
+  } catch (err) {
+    console.error("Error fetching courses:", err);
+    return res
+      .status(500)
+      .json({ error: true, message: "Internal Server Error" });
   }
 });
 
-/**
+
+/** Route to get details of a specfic course
  * @swagger
  * /course/details/{id}:
  *   get:
@@ -297,7 +400,11 @@ router.get("/details/:id", async (req, res) => {
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json(generateResponseMessage("error", "Unauthorized, missing auth token."));
+    return res
+      .status(401)
+      .json(
+        generateResponseMessage("error", "Unauthorized, missing auth token.")
+      );
   }
 
   try {
@@ -334,10 +441,7 @@ router.get("/details/:id", async (req, res) => {
   }
 });
 
-
-
-
-/**
+/** Route to update a course
  * @swagger
  * /course/update/{id}:
  *   put:
@@ -429,7 +533,7 @@ router.get("/details/:id", async (req, res) => {
  *                 message:
  *                   type: string
  *                   example: Error updating course.
- * 
+ *
  */
 router.put("/update/:id", async (req, res) => {
   console.log("Route reached");
@@ -444,8 +548,7 @@ router.put("/update/:id", async (req, res) => {
       );
   }
   try {
-
-		const decodedToken = jwt.verify(token, "aspireinfoz");
+    const decodedToken = jwt.verify(token, "aspireinfoz");
     console.log("Decoded Token:", decodedToken);
     const { role } = decodedToken;
 
@@ -483,8 +586,7 @@ router.put("/update/:id", async (req, res) => {
   }
 });
 
-
-/**
+/** Route to enroll a student in a course
  * @swagger
  * /course/enroll/{id}:
  *   post:
@@ -705,31 +807,53 @@ router.post("/enroll/:id", checkJwt, async (req, res) => {
     const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json(generateResponseMessage("error", "Unauthorized, missing auth token."));
+      return res
+        .status(401)
+        .json(
+          generateResponseMessage("error", "Unauthorized, missing auth token.")
+        );
     }
 
     // Decode the JWT token to get the user information
     const decodedToken = jwt.verify(token, "aspireinfoz");
-		console.log(decodedToken)
+    console.log(decodedToken);
     const { role, id } = decodedToken;
-		const k = USERROLE_CODES.REGULAR
+    const k = USERROLE_CODES.REGULAR;
     // Check if the user role is valid and is allowed to enroll in the course
     if (role !== k) {
-      return res.status(403).json(generateResponseMessage("error", "Only students are allowed to enroll in the course."));
+      return res
+        .status(403)
+        .json(
+          generateResponseMessage(
+            "error",
+            "Only students are allowed to enroll in the course."
+          )
+        );
     }
 
     // Find the course by its ID
     const course = await Course.findById(courseId);
 
     if (!course) {
-      return res.status(404).json(generateResponseMessage("error", "Course not found"));
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Course not found"));
     }
 
     // Check if the user is already enrolled in the course
-    const isEnrolled = course.registrations.some(registration => registration.user.toString() === id.toString());
+    const isEnrolled = course.registrations.some(
+      (registration) => registration.user.toString() === id.toString()
+    );
 
     if (isEnrolled) {
-      return res.status(400).json(generateResponseMessage("error", "User is already enrolled in the course."));
+      return res
+        .status(400)
+        .json(
+          generateResponseMessage(
+            "error",
+            "User is already enrolled in the course."
+          )
+        );
     }
 
     // Create a new registration object for the student
@@ -750,12 +874,91 @@ router.post("/enroll/:id", checkJwt, async (req, res) => {
   } catch (error) {
     // Handle errors during the enrollment process
     console.error("Error enrolling student:", error);
-    res.status(500).json(generateResponseMessage("error", "Student enrollment failed"));
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Student enrollment failed"));
+  }
+});
+
+router.get("/pending-requests", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ error: true, message: "Unauthorized, missing auth token." });
+  }
+
+  try {
+    // Decode the JWT token to get the user information
+    const decodedToken = jwt.verify(token, "aspireinfoz");
+    const userRole = decodedToken.role; // Assuming the role is specified in the token
+
+    if (userRole !== 1) {
+      // Check if the user is an admin
+      return res
+        .status(403)
+        .json({ error: true, message: "Forbidden, invalid user role" });
+    }
+
+    // If the user is an admin, fetch all pending registration requests
+    const pendingRequests = await Course.find({
+      "registrations.state": 0 ,// Assuming 0 represents pending state for registration
+    })
+		.populate("registrations.user", "firstname lastname"); // Populate user details
+
+    if (pendingRequests.length === 0) {
+      return res.status(204).json({ message: "No pending registration requests" });
+    }
+
+    return res.status(200).json(pendingRequests);
+  } catch (err) {
+    console.error("Error fetching pending registration requests:", err);
+    return res
+      .status(500)
+      .json({ error: true, message: "Internal Server Error" });
   }
 });
 
 
+// Assuming you have already imported the necessary modules and models
 
+// API endpoint to get the list of registered courses for a user
+// router.get("/enrolled-courses", async (req, res) => {
+//   const authHeader = req.headers["authorization"];
+//   const token = authHeader && authHeader.split(" ")[1];
+
+//   if (!token) {
+//     return res.status(401).json(generateResponseMessage("error", "Unauthorized, missing auth token."));
+//   }
+
+//   try {
+//     // Decode the JWT token to get the user information
+//     const decodedToken = jwt.verify(token, "aspireinfoz");
+//     console.log("Decoded Token:", decodedToken);
+
+//     const userId = decodedToken.id;
+// 		if (!userId) {
+//       return res.status(400).json({ message: "User ID not found in token" });
+//     }
+//     // Find the user by their ID
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Get the list of registered courses for the user
+//     const registeredCourses = await Course.find({ _id: { $in: user.registeredCourses } });
+
+//     // Return the list of registered courses
+//     res.status(200).json(registeredCourses);
+//   } catch (err) {
+//     console.error("Error fetching registered courses:", err);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// });
 
 // router.get("/trending", async (req, res) => {
 //     //not required to be logged in

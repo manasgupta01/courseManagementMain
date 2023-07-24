@@ -66,28 +66,30 @@ const materialSchema = new mongoose.Schema({
 
 // Define the Course schema
 const courseSchema = new mongoose.Schema({
-	title: 					{ type: String, required: true, unique: true },
-	subtitle: 			{ type: String, required: true },
-	description: 		{ type: String, required: true },
-	tags: 					[ { type: String, required: true } ],
-	pic: 						{ type: String },
-	startDate: 			{ type: Date },
-	endDate: 				{ type: Date },
+  title: { type: String, required: true, unique: true },
+  subtitle: { type: String, required: true },
+  description: { type: String, required: true },
+  tags: [{ type: String, required: true }],
+  pic: { type: String },
+  startDate: { type: Date },
+  endDate: { type: Date },
 
-	 createdBy:			{ type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-	 creationDate:		{ type: Date, required: true, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+  creationDate: { type: Date, required: true, default: Date.now },
 
-	managers: 			[ { type: managerSchema } ],
-	material:				[ { type: materialSchema } ],
-	registrations: 	[ registrationSchema ],
+  managers: [{ type: managerSchema }],
+  material: [{ type: materialSchema }],
+  registrations: [registrationSchema],
 
-	rating: {
-		upvotes: 		[ { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true } ],
-		downvotes: 	[ { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true } ]
-	},
+  rating: {
+    upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users", required: true }],
+    downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users", required: true }],
+  },
 
-	status:					{ type: Number, required: true, default: COURSESTATUS_CODES.DRAFT }
-})
+  status: { type: Number, required: true, default: COURSESTATUS_CODES.DRAFT },
+
+  createdByDetails: { type: Object, select: "-_id -password" }, // Include additional field for createdByDetails
+});
 
 // Create the Course model based on the Course schema
 const Course = mongoose.model("courses", courseSchema)
