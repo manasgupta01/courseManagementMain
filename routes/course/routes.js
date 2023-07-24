@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const {
   Course,
   MANAGERROLE_CODES,
+	 REGISTRATIONSTATUS_CODES
 } = require("../../db/models/course/model");
 
 // Validators
@@ -481,6 +482,280 @@ router.put("/update/:id", async (req, res) => {
     return res.status(500).json({ message: "Error updating course" });
   }
 });
+
+
+/**
+ * @swagger
+ * /course/enroll/{id}:
+ *   post:
+ *     summary: Enroll a student in a course.
+ *     tags:
+ *       - course
+ *     description: Enroll a student in a specific course using the course ID. This route is protected and requires a valid JWT token with the role of a student.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course to enroll the student in.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful enrollment. Returns the updated course data with the student's registration details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/Course'
+ *       401:
+ *         description: Unauthorized. The request lacks valid authentication credentials (JWT token).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized, missing auth token.
+ *       403:
+ *         description: Forbidden. The user does not have the required role for enrolling in a course.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Only students are allowed to enroll in the course.
+ *       404:
+ *         description: Not Found. The course with the specified ID was not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Course not found
+ *       400:
+ *         description: Bad Request. The user is already enrolled in the course.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: User is already enrolled in the course.
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the enrollment request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Student enrollment failed.
+ *     components:
+ *       schemas:
+ *         Course:
+ *           type: object
+ *           properties:
+ *             title:
+ *               type: string
+ *             subtitle:
+ *               type: string
+ *             description:
+ *               type: string
+ *             tags:
+ *               type: array
+ *               items:
+ *                 type: string
+ *             pic:
+ *               type: string
+ *             startDate:
+ *               type: string
+ *               format: date-time
+ *             endDate:
+ *               type: string
+ *               format: date-time
+ *             createdBy:
+ *               type: string
+ *             creationDate:
+ *               type: string
+ *               format: date-time
+ *             managers:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   managerId:
+ *                     type: string
+ *                   role:
+ *                     type: integer
+ *             material:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   url:
+ *                     type: string
+ *                   addedBy:
+ *                     type: string
+ *                   addedOn:
+ *                     type: string
+ *                     format: date-time
+ *                   description:
+ *                     type: string
+ *             registrations:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   user:
+ *                     type: string
+ *                   state:
+ *                     type: integer
+ *                   requestedAt:
+ *                     type: string
+ *                     format: date-time
+ *                   acceptedAt:
+ *                     type: string
+ *                     format: date-time
+ *                   rejectedAt:
+ *                     type: string
+ *                     format: date-time
+ *                   discontinuedAt:
+ *                     type: string
+ *                     format: date-time
+ *                   feedback:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         type:
+ *                           type: integer
+ *                         details:
+ *                           type: string
+ *                         feedback:
+ *                           type: string
+ *                         createdBy:
+ *                           type: string
+ *                         timestamp:
+ *                           type: string
+ *                           format: date-time
+ *                         score:
+ *                           type: number
+ *                           minimum: 0
+ *                           maximum: 100
+ *             rating:
+ *               type: object
+ *               properties:
+ *                 upvotes:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 downvotes:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 score:
+ *                   type: number
+ *                   minimum: 0
+ *             comments:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   user:
+ *                     type: string
+ *                   comment:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ */
+router.post("/enroll/:id", checkJwt, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json(generateResponseMessage("error", "Unauthorized, missing auth token."));
+    }
+
+    // Decode the JWT token to get the user information
+    const decodedToken = jwt.verify(token, "aspireinfoz");
+		console.log(decodedToken)
+    const { role, id } = decodedToken;
+		const k = USERROLE_CODES.REGULAR
+    // Check if the user role is valid and is allowed to enroll in the course
+    if (role !== k) {
+      return res.status(403).json(generateResponseMessage("error", "Only students are allowed to enroll in the course."));
+    }
+
+    // Find the course by its ID
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json(generateResponseMessage("error", "Course not found"));
+    }
+
+    // Check if the user is already enrolled in the course
+    const isEnrolled = course.registrations.some(registration => registration.user.toString() === id.toString());
+
+    if (isEnrolled) {
+      return res.status(400).json(generateResponseMessage("error", "User is already enrolled in the course."));
+    }
+
+    // Create a new registration object for the student
+    const newRegistration = {
+      user: id,
+      state: REGISTRATIONSTATUS_CODES.REQUESTED, // You can set the initial state to REQUESTED or ACCEPTED based on your use case
+      requestedAt: new Date(),
+    };
+
+    // Add the registration to the course's registrations array
+    course.registrations.push(newRegistration);
+
+    // Save the updated course with the new registration
+    await course.save();
+
+    // Return the updated course data as a response
+    res.status(200).json(generateResponseMessage("success", course));
+  } catch (error) {
+    // Handle errors during the enrollment process
+    console.error("Error enrolling student:", error);
+    res.status(500).json(generateResponseMessage("error", "Student enrollment failed"));
+  }
+});
+
+
+
 
 // router.get("/trending", async (req, res) => {
 //     //not required to be logged in
