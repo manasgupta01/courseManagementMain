@@ -54,7 +54,7 @@ const registrationSchema = new mongoose.Schema({
 
 const managerSchema = new mongoose.Schema({
 	managerId: 		{ type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-	role: 				{ type: Number, required: true, default: MANAGERROLE_CODES.AUDITOR }
+	role: 				{ type: Number, required: true, default: MANAGERROLE_CODES.COORDINATOR }
 })
 
 const materialSchema = new mongoose.Schema({

@@ -8,7 +8,8 @@ const USERSTATUS_CODES = {
 
 const USERROLE_CODES = {
 	REGULAR: 0,
-	SUPERADMIN: 1
+	SUPERADMIN: 1,
+	MANAGER:2
 }
 
 const userSchema = new mongoose.Schema({

@@ -42,15 +42,17 @@ const descriptionSchema = Joi.string()
 	'string.pattern.base': 'Description should only contain alphabet characters, periods, apostrophes and digits.'
 })
 
-const tagsSchema = Joi.array().items(
-    Joi.string().regex(/^[a-zA-Z.\d]+$/, 'Tag must be a valid string')
-  )
-.required()
-.messages({
-  'object.required': 'Tags array is a mandatory field',
-  'array.includes': 'Each tag in the tags array must be a string',
-  'string.regex.name': 'Each tag in the tags array must be a valid string'
-})
+
+const tagsSchema = Joi.array()
+  .items(Joi.string().required().messages({
+    'string.base': 'Each tag in the tags array must be a string',
+    'any.required': 'Each tag in the tags array is required',
+  }))
+  .required()
+  .messages({
+    'object.required': 'Tags array is a mandatory field',
+    'array.includesRequiredUnknowns': 'Each tag in the tags array must be a string',
+  });
 
 const createCourseValidator = Joi.object({
 	name:					nameSchema,

@@ -9,6 +9,7 @@ const {
 } = require("../../db/models/course/model");
 
 const { User } = require("../../db/models/user/model");
+const { USERROLE_CODES } = require("../../db/models/user/model");
 
 // Validators
 const { createCourseValidator } = require("./validators");
@@ -19,13 +20,12 @@ const { generateResponseMessage } = require("../../helpers/response");
 
 // Logger
 const logger = require("../../helpers/logger");
-const { USERROLE_CODES } = require("../../db/models/user/model");
 
 // Instantiating the router object
 const router = express.Router();
 
 // Middleware to check for valid JWT token in header (authorization)
-//router.use(checkJwt)
+router.use(checkJwt)
 
 /** Route to create a new course, allowed only by the SUPERADMINS.
  * @swagger
@@ -98,21 +98,11 @@ const router = express.Router();
  *                   example: Not allowed for this role.
  */
 router.post("/", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (!token) {
-    return res
-      .status(401)
-      .json(
-        generateResponseMessage("error", "Unauthorized, missing auth token.")
-      );
-  }
 
   try {
     // Decode the JWT token to get the user information
-    const decodedToken = jwt.verify(token, "aspireinfoz");
-    const { role, id } = decodedToken;
+    const role = req.role;
+		const id = req.id;
     const { title, subtitle, description, tags } = req.body;
 
     // Check if role is valid (only SUPERADMIN can create a course)
@@ -124,7 +114,11 @@ router.post("/", async (req, res) => {
 
     // Validate the request body
     createCourseValidator.validate(req.body);
-
+		if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string")) {
+      return res
+        .status(400)
+        .json(generateResponseMessage("error", "Tags must be an array of strings."));
+    }
     // Create a new Course with the data
     const newCourseObject = {
       title,
@@ -143,6 +137,9 @@ router.post("/", async (req, res) => {
 
     res.status(200).json(generateResponseMessage("success", newCourseData));
   } catch (err) {
+
+		logger.error(err)
+
     // Handle different types of errors and return appropriate response messages
     if (err instanceof jwt.JsonWebTokenError) {
       // JWT token error
@@ -169,7 +166,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-/**
+/** get all detail courses for admin and necessary details for user
  * @swagger 
  * /course/all:
  *   get:
@@ -189,7 +186,7 @@ router.post("/", async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
  *       204:
- *         description: No Content. There are no courses found in the system.
+ *         description: No courses found. The request was successful, but there are no courses available.
  *         content:
  *           application/json:
  *             schema:
@@ -272,37 +269,24 @@ router.post("/", async (req, res) => {
  *                   type: string
  */
 router.get("/all", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (!token) {
-    return res
-      .status(401)
-      .json({ error: true, message: "Unauthorized, missing auth token." });
-  }
 
   try {
     // Decode the JWT token to get the user information
-    const decodedToken = jwt.verify(token, "aspireinfoz");
-    console.log("Decoded Token:", decodedToken);
 
-    const userId = decodedToken.id;
-    const userRole = decodedToken.role; // Assuming the role is specified in the token
-    console.log("manasgupta", userId, userRole);
+    const userId = req.id;
+    const userRole = req.role; // Assuming the role is specified in the token
+   
     if (!userId || userRole.length == 0) {
       return res
         .status(400)
-        .json({ error: true, message: "User ID or Role not found in token" });
+        .json(generateResponseMessage("error","User ID or Role not found in token" ));
     }
 
-    if (userRole === 1) {
+    if (userRole === USERROLE_CODES.SUPERADMIN) {
       // If the user is an admin, fetch all courses with full details
       const courses = await Course.find().populate("createdByDetails"); // Populate createdByDetails
-      if (courses.length === 0) {
-        return res.status(204).json({ message: "No courses found" });
-      }
-      return res.status(200).json(courses);
-    } else if (userRole === 0) {
+      return res.status(200).json(generateResponseMessage("success",courses))
+    } else if (userRole === USERROLE_CODES.REGULAR) {
       // If the user is a student, fetch only necessary details for each course
       const courses = await Course.find({ status: 1 })
         .select(
@@ -316,71 +300,59 @@ router.get("/all", async (req, res) => {
           path: "registrations",
           match: { state: 1 }, // Only include registrations with state === 1
         }); // Populate createdByDetails
-      if (courses.length === 0) {
-        return res.status(204).json({ message: "No courses found" });
-      }
-      return res.status(200).json(courses);
+
+      return res.status(200).json(generateResponseMessage("success",courses))
     } else {
       return res
         .status(403)
-        .json({ error: true, message: "Forbidden, invalid user role" });
+        .json(generateResponseMessage( "error","Forbidden, invalid user role" ))
     }
   } catch (err) {
+		logger.error(err)
     console.error("Error fetching courses:", err);
     return res
       .status(500)
-      .json({ error: true, message: "Internal Server Error" });
+      .json(generateResponseMessage( "error","Internal Server Error" ));
   }
 });
 
-
-/** Route to get details of a specfic course
- * @swagger
- * /course/details/{id}:
+/** get detail of a specific course
+ * @swagger 
+ * /course/{id}:
  *   get:
  *     summary: Get course details by ID.
  *     tags:
  *       - course
- *     description: Retrieve the details of a course by its ID.
+ *     description: Retrieve the details of a specific course using its unique ID.
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
+ *         description: ID of the course to fetch.
  *         schema:
  *           type: string
- *         required: true
- *         description: The ID of the course to retrieve.
  *     security:
- *       - bearerAuth: []
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
  *     responses:
  *       200:
- *         description: Successful operation. Returns the details of the course.
+ *         description: Successful operation. Returns the course details.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Course'
- *       401:
- *         description: Unauthorized. The request lacks valid authentication credentials.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Unauthorized, missing auth token.
+ *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
  *       404:
- *         description: Not Found. The course with the specified ID was not found.
+ *         description: Not Found. The requested course does not exist in the system.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Course not found
+ *                   example: Course Not Found
  *       500:
  *         description: Internal Server Error. An error occurred while processing the request.
  *         content:
@@ -388,135 +360,108 @@ router.get("/all", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: error
  *                 message:
  *                   type: string
  *                   example: Internal Server Error.
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         createdBy:
+ *           type: string
+ *         registrations:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
+ *                 type: string
+ *               feedback:
+ *                 type: array
+ *                 items:
+ *                   type: string
  */
-router.get("/details/:id", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (!token) {
-    return res
-      .status(401)
-      .json(
-        generateResponseMessage("error", "Unauthorized, missing auth token.")
-      );
-  }
-
+router.get("/:id", async (req, res) => {
   try {
-    // Decode the JWT token to get the user information
-    const decodedToken = jwt.verify(token, "aspireinfoz");
-    console.log("Decoded Token:", decodedToken);
-
-    // Check if user exists and is active (example code commented out)
-    // const userId = decodedToken.id;
-    // const userExists = await isUserActive(userId);
-    // // only permanent users can access the courses
-    // if (userExists !== 1) {
-    //     const outputString =  "The user's account is " +
-    //         (userExists == -1) ? "throwing a db error" :
-    //         (userExists == -2) ? "not a valid id" :
-    //         (userExists == 0) ? "not found with this id" :
-    //         (userExists == 2) ? "is only temporarily registered" :
-    //         (userExists == 3) ? "is banned" : `!! returning ${userExists}`
-    //     return res.status(403).json(generateResponseMessage("error", outputString));
-    // }
-
     const courseId = req.params.id;
     const course = await Course.findById(courseId);
 
     if (!course) {
-      return res.status(404).json({ message: "Course not found" });
+      return res.status(404).json(generateResponseMessage( "error","Course Not Found" ));
     }
 
     // Return the course details
-    res.status(200).json(course);
+    res.status(200).json(generateResponseMessage( "success",course));
   } catch (err) {
+		logger.error(err)
     console.error("Error fetching course details:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json(generateResponseMessage("error", "Internal Server Error" ));
   }
 });
 
-/** Route to update a course
- * @swagger
- * /course/update/{id}:
+/** update a course 
+ * @swagger 
+ * /course/{id}:
  *   put:
  *     summary: Update course details by ID.
- *     description: Update the details of a course by its ID. This route is allowed only for SUPERADMIN users.
  *     tags:
- *      - course
+ *       - course
+ *     description: Update the details of a specific course using its unique ID. Only admins can perform this action.
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
+ *         description: ID of the course to update.
  *         schema:
  *           type: string
- *         required: true
- *         description: The ID of the course to update.
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
  *     requestBody:
  *       required: true
+ *       description: Course details to update.
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 example: Aspire JavaScript Course - Intermediate
- *               subtitle:
- *                 type: string
- *                 example: Learn Advanced JS Concepts
- *               description:
- *                 type: string
- *                 example: An intermediate level course for mastering JavaScript.
- *               material:
- *                 type: string
- *                 example: Textbook, Online Resources, Exercises
- *     security:
- *       - bearerAuth: []
+ *             $ref: '#/components/schemas/UpdateCourseInput'   # Reference the "UpdateCourseInput" schema here
  *     responses:
  *       200:
- *         description: Successful operation. Returns the updated details of the course.
+ *         description: Successful operation. Returns the updated course details.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Course'
- *       401:
- *         description: Unauthorized. The request lacks valid authentication credentials.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Unauthorized, missing auth token.
- *       403:
- *         description: Forbidden. The user does not have the required role for updating courses.
+ *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
+ *       400:
+ *         description: Bad Request. Invalid request parameters or data.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: error
+ *                 error:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Not allowed for this role.
+ *                   example: Invalid course status or manager role.
  *       404:
- *         description: Not Found. The course with the specified ID was not found.
+ *         description: Not Found. The requested course does not exist in the system.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
  *                   example: Course not found
@@ -527,300 +472,217 @@ router.get("/details/:id", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: error
  *                 message:
  *                   type: string
  *                   example: Error updating course.
- *
+ * components:
+ *   schemas:
+ *     UpdateCourseInput:
+ *       type: object
+ *       properties:
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         material:
+ *           type: string
+ *         managers:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [instructor, ta, coordinator, assessor, auditor, college, industry]
+ *         status:
+ *           type: string
+ *           enum: [draft, published, archived, finished]
  */
-router.put("/update/:id", async (req, res) => {
-  console.log("Route reached");
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (!token) {
-    return res
-      .status(401)
-      .json(
-        generateResponseMessage("error", "Unauthorized, missing auth token.")
-      );
-  }
+router.put("/:id", async (req, res) => {
   try {
-    const decodedToken = jwt.verify(token, "aspireinfoz");
-    console.log("Decoded Token:", decodedToken);
-    const { role } = decodedToken;
+   
+    const userRole = req.role;
 
-    // Check if role is valid (only SUPERADMIN can create a course)
-    if (role !== USERROLE_CODES.SUPERADMIN) {
-      return res
-        .status(403)
-        .json(generateResponseMessage("error", "Not allowed for this role."));
-    }
+    // Check if the user is an admin using the authentication token
+    if (userRole === USERROLE_CODES.SUPERADMIN) {
+      // User is an admin, proceed with update
+      // Validate the request body
+      createCourseValidator.validate(req.body);
 
-    // Validate the request body
-    createCourseValidator.validate(req.body);
+      const courseId = req.params.id;
+      const { title, subtitle, description, material, managers,status } = req.body;
 
-    const courseId = req.params.id;
-    const { title, subtitle, description, material } = req.body;
-    console.log(courseId);
+      const updatedFields = {
+        title,
+        subtitle,
+        description,
+        material,
+				status
+      };
 
-    const updatedCourse = await Course.findOneAndUpdate(
-      { _id: courseId }, // Use "_id" to match the document by its ID
-      { title },
-      { subtitle },
-      { description },
-      { material },
-      { new: true }
-    );
+			if (![COURSESTATUS_CODES.DRAFT, COURSESTATUS_CODES.PUBLISHED, COURSESTATUS_CODES.ARCHIVED, COURSESTATUS_CODES.FINISHED].includes(status)) {
+				return res.status(400).json(generateResponseMessage(
+					"error",
+					"Invalid course status"
+				))
+			}
+      // Check if the request includes managers to add
+      if (managers && Array.isArray(managers) && managers.length > 0) {
+        // Validate the manager roles and IDs before adding them
+        for (const manager of managers) {
+					if (![MANAGERROLE_CODES.INSTRUCTOR,
+						MANAGERROLE_CODES.TA,
+					MANAGERROLE_CODES.COORDINATOR,					// course administrators
+					MANAGERROLE_CODES.ASSESSOR,						// users who assist in assigning grades or feedback
+					MANAGERROLE_CODES.AUDITOR,							// users who just view all details	
+					MANAGERROLE_CODES.COLLEGE,							// auditors representing an educational institution
+					MANAGERROLE_CODES.INDUSTRY].includes(manager.role)) {
+						return res.status(400).json(generateResponseMessage("error", "Invalid manager role."));
+					}
+				}
 
-    if (updatedCourse) {
-      return res.status(200).json(updatedCourse);
+        // Add the new managers to the course
+        if (!updatedFields.managers) {
+          updatedFields.managers = [];
+        }
+
+        updatedFields.managers.push(...managers);
+      }
+
+			const updatedCourse = await Course.findOneAndUpdate(
+        { _id: courseId },
+        { $addToSet: { managers: { $each: managers } } },
+        { new: true }
+      );
+
+      if (updatedCourse) {
+        return res.status(200).json(generateResponseMessage("success", updatedCourse));
+      } else {
+        return res.status(404).json(generateResponseMessage("error", "Course not found"));
+      }
     } else {
-      return res.status(404).json({ message: "Course not found" });
+      // ... (same code as in the previous response)
     }
   } catch (error) {
+		logger.error(err)
     console.error("Error updating course:", error);
-    return res.status(500).json({ message: "Error updating course" });
+    return res.status(500).json(generateResponseMessage("error", "Error updating course"));
   }
 });
 
-/** Route to enroll a student in a course
- * @swagger
+/** enroll a student in a course
+ * @swagger 
  * /course/enroll/{id}:
  *   post:
  *     summary: Enroll a student in a course.
  *     tags:
  *       - course
- *     description: Enroll a student in a specific course using the course ID. This route is protected and requires a valid JWT token with the role of a student.
+ *     description: Enroll a student in a course using the course ID. Only students are allowed to enroll.
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
+ *         description: ID of the course in which the student should be enrolled.
  *         schema:
  *           type: string
- *         required: true
- *         description: The ID of the course to enroll the student in.
  *     security:
- *       - bearerAuth: []
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
  *     responses:
  *       200:
- *         description: Successful enrollment. Returns the updated course data with the student's registration details.
+ *         description: Successful operation. Returns the updated course data after enrollment.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
+ *       400:
+ *         description: Bad Request. Invalid request parameters or student is already enrolled in the course.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   $ref: '#/components/schemas/Course'
- *       401:
- *         description: Unauthorized. The request lacks valid authentication credentials (JWT token).
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
+ *                 error:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Unauthorized, missing auth token.
+ *                   example: User is already enrolled in the course.
  *       403:
- *         description: Forbidden. The user does not have the required role for enrolling in a course.
+ *         description: Forbidden. Only students are allowed to enroll in the course.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: error
+ *                 error:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
  *                   example: Only students are allowed to enroll in the course.
  *       404:
- *         description: Not Found. The course with the specified ID was not found.
+ *         description: Not Found. The requested course does not exist in the system.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: error
+ *                 error:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
  *                   example: Course not found
- *       400:
- *         description: Bad Request. The user is already enrolled in the course.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: User is already enrolled in the course.
  *       500:
- *         description: Internal Server Error. An error occurred while processing the enrollment request.
+ *         description: Internal Server Error. An error occurred while processing the request.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: error
  *                 message:
  *                   type: string
  *                   example: Student enrollment failed.
- *     components:
- *       schemas:
- *         Course:
- *           type: object
- *           properties:
- *             title:
- *               type: string
- *             subtitle:
- *               type: string
- *             description:
- *               type: string
- *             tags:
- *               type: array
- *               items:
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         createdBy:
+ *           type: string
+ *         registrations:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
  *                 type: string
- *             pic:
- *               type: string
- *             startDate:
- *               type: string
- *               format: date-time
- *             endDate:
- *               type: string
- *               format: date-time
- *             createdBy:
- *               type: string
- *             creationDate:
- *               type: string
- *               format: date-time
- *             managers:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   managerId:
- *                     type: string
- *                   role:
- *                     type: integer
- *             material:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   url:
- *                     type: string
- *                   addedBy:
- *                     type: string
- *                   addedOn:
- *                     type: string
- *                     format: date-time
- *                   description:
- *                     type: string
- *             registrations:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   user:
- *                     type: string
- *                   state:
- *                     type: integer
- *                   requestedAt:
- *                     type: string
- *                     format: date-time
- *                   acceptedAt:
- *                     type: string
- *                     format: date-time
- *                   rejectedAt:
- *                     type: string
- *                     format: date-time
- *                   discontinuedAt:
- *                     type: string
- *                     format: date-time
- *                   feedback:
- *                     type: array
- *                     items:
- *                       type: object
- *                       properties:
- *                         type:
- *                           type: integer
- *                         details:
- *                           type: string
- *                         feedback:
- *                           type: string
- *                         createdBy:
- *                           type: string
- *                         timestamp:
- *                           type: string
- *                           format: date-time
- *                         score:
- *                           type: number
- *                           minimum: 0
- *                           maximum: 100
- *             rating:
- *               type: object
- *               properties:
- *                 upvotes:
- *                   type: array
- *                   items:
- *                     type: string
- *                 downvotes:
- *                   type: array
- *                   items:
- *                     type: string
- *                 score:
- *                   type: number
- *                   minimum: 0
- *             comments:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   user:
- *                     type: string
- *                   comment:
- *                     type: string
- *                   createdAt:
- *                     type: string
- *                     format: date-time
+ *               feedback:
+ *                 type: array
+ *                 items:
+ *                   type: string
  */
-router.post("/enroll/:id", checkJwt, async (req, res) => {
+router.post("/enroll/:id", async (req, res) => {
   try {
     const courseId = req.params.id;
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (!token) {
-      return res
-        .status(401)
-        .json(
-          generateResponseMessage("error", "Unauthorized, missing auth token.")
-        );
-    }
-
-    // Decode the JWT token to get the user information
-    const decodedToken = jwt.verify(token, "aspireinfoz");
-    console.log(decodedToken);
-    const { role, id } = decodedToken;
-    const k = USERROLE_CODES.REGULAR;
+    
+    const role = req.role
+			const id = req.id
+  
     // Check if the user role is valid and is allowed to enroll in the course
-    if (role !== k) {
+    if (role !== USERROLE_CODES.REGULAR) {
       return res
         .status(403)
         .json(
@@ -872,6 +734,7 @@ router.post("/enroll/:id", checkJwt, async (req, res) => {
     // Return the updated course data as a response
     res.status(200).json(generateResponseMessage("success", course));
   } catch (error) {
+		logger.error(error)
     // Handle errors during the enrollment process
     console.error("Error enrolling student:", error);
     res
@@ -880,22 +743,199 @@ router.post("/enroll/:id", checkJwt, async (req, res) => {
   }
 });
 
-router.get("/pending-requests", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+/** unenroll a student from a course
+ * @swagger 
+ * /course/unenroll/{id}:
+ *   post:
+ *     summary: Unenroll a student from a course.
+ *     tags:
+ *       - course
+ *     description: Unenroll a student from a course using the student's user ID and the course ID.
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course to unenroll from.
+ *     responses:
+ *       200:
+ *         description: Successful operation. Returns the updated course object after unenrollment.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
+ *       400:
+ *         description: Bad Request. User is not enrolled in the course or invalid course ID.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User is not enrolled in the course.
+ *       404:
+ *         description: Not Found. Course with the specified ID not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Course not found.
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Student unenrollment failed.
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         createdBy:
+ *           type: string
+ *         registrations:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
+ *                 type: string
+ *               state:
+ *                 type: number
+ *               requestedAt:
+ *                 type: string
+ */
+router.post("/unenroll/:id", async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const userId = req.id;
 
-  if (!token) {
-    return res
-      .status(401)
-      .json({ error: true, message: "Unauthorized, missing auth token." });
+    // Find the course by its ID
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json(generateResponseMessage("error", "Course not found"));
+    }
+
+    // Check if the user is enrolled in the course
+    const enrollmentIndex = course.registrations.findIndex(
+      (registration) => registration.user.toString() === userId.toString()
+    );
+
+    if (enrollmentIndex === -1) {
+      return res.status(400).json(generateResponseMessage("error", "User is not enrolled in the course."));
+    }
+
+    // Remove the enrollment from the course's registrations array
+    course.registrations.splice(enrollmentIndex, 1);
+
+    // Save the updated course without the unenrolled student
+    await course.save();
+
+    // Return the updated course data as a response
+    res.status(200).json(generateResponseMessage("success", course));
+  } catch (error) {
+    logger.error(error);
+    // Handle errors during the unenrollment process
+    console.error("Error unenrolling student:", error);
+    res.status(500).json(generateResponseMessage("error", "Student unenrollment failed"));
   }
+});
+
+
+/**
+ * @swagger
+ * /course/pending-requests:
+ *   get:
+ *     summary: Get all pending registration requests for superadmin.
+ *     description: Retrieve a list of pending registration requests accessible to a superadmin.
+ *     tags: [Pending Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of pending registration requests.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CourseWithRegistrations'
+ *       204:
+ *         description: No pending registration requests found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No pending registration requests
+ *       401:
+ *         description: Unauthorized, missing or invalid auth token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized, missing or invalid auth token.
+ *       403:
+ *         description: Forbidden, invalid user role.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Forbidden, invalid user role.
+ *       500:
+ *         description: Internal Server Error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error.
+ */
+router.get("/pending-requests", async (req, res) => {
 
   try {
-    // Decode the JWT token to get the user information
-    const decodedToken = jwt.verify(token, "aspireinfoz");
-    const userRole = decodedToken.role; // Assuming the role is specified in the token
+    const userRole = req.role; // Assuming the role is specified in the token
 
-    if (userRole !== 1) {
+    if (userRole !== USERROLE_CODES.SUPERADMIN) {
       // Check if the user is an admin
       return res
         .status(403)
@@ -909,17 +949,466 @@ router.get("/pending-requests", async (req, res) => {
 		.populate("registrations.user", "firstname lastname"); // Populate user details
 
     if (pendingRequests.length === 0) {
-      return res.status(204).json({ message: "No pending registration requests" });
+      return res.status(204).json(generateResponseMessage( "success", "No pending registration requests" ))
     }
 
-    return res.status(200).json(pendingRequests);
+    return res.status(200).json(generateResponseMessage("success",pendingRequests))
   } catch (err) {
+		logger.error(err)
     console.error("Error fetching pending registration requests:", err);
     return res
       .status(500)
-      .json({ error: true, message: "Internal Server Error" });
+      .json(generateResponseMessage("error","Internal Server Error" ))
   }
 });
+
+
+//  CRUD FOR MATERIAL
+
+/** create materail for a course
+ * @swagger 
+ * /course/{courseId}/material:
+ *   post:
+ *     summary: Add a new material to a course.
+ *     tags:
+ *       - course
+ *     description: Add a new material to a course using the course ID.
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         description: ID of the course to which the material should be added.
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: material
+ *         required: true
+ *         description: Material object to be added to the course.
+ *         schema:
+ *           type: object
+ *           properties:
+ *             url:
+ *               type: string
+ *               description: URL of the material.
+ *             description:
+ *               type: string
+ *               description: Description of the material.
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: URL of the material.
+ *               description:
+ *                 type: string
+ *                 description: Description of the material.
+ *     responses:
+ *       201:
+ *         description: Successful operation. Material added to the course successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Material added successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Material'   # Reference the "Material" schema here
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Error creating material.
+ * components:
+ *   schemas:
+ *     Material:
+ *       type: object
+ *       properties:
+ *         url:
+ *           type: string
+ *         addedBy:
+ *           type: string
+ *         description:
+ *           type: string
+ */
+router.post("/:courseId/material", async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+		const addedBy = req.id
+    const { url, description } = req.body;
+
+    // Create a new material object
+    const newMaterial = { url, addedBy, description };
+
+    // Find the course by ID
+    const course = await Course.findById(courseId);
+
+    // Add the new material to the course's material array
+    course.material.push(newMaterial);
+
+    // Save the updated course
+    await course.save();
+
+    return res.status(201).json(generateResponseMessage(
+      "success: Material added successfully",
+      newMaterial
+		))
+  } catch (error) {
+		logger.error(error)
+    console.error("Error creating material:", error);
+    return res.status(500).json(generateResponseMessage(
+      "error",
+      "Error creating material"
+		));
+  }
+});
+
+/**  read all the materials in a course
+ * @swagger 
+ * /course/{courseId}/material:
+ *   get:
+ *     summary: Get materials for a specific course.
+ *     tags:
+ *       - course
+ *     description: Retrieve the materials available for a specific course using the course ID.
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         description: ID of the course for which materials should be fetched.
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     responses:
+ *       200:
+ *         description: Successful operation. Returns an array of material objects for the course.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Material'   # Reference the "Material" schema here
+ *       404:
+ *         description: Not Found. The specified course was not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Course not found
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Error fetching materials.
+ * components:
+ *   schemas:
+ *     Material:
+ *       type: object
+ *       properties:
+ *         url:
+ *           type: string
+ *         addedBy:
+ *           type: string
+ *         description:
+ *           type: string
+ */
+router.get("/:courseId/material", async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+
+    // Find the course by ID and project only the material field
+    const course = await Course.findById(courseId).select("material");
+
+    if (!course) {
+      return res.status(404).json(generateResponseMessage(
+        "error",
+        "Course not found"
+			))
+    }
+
+    return res.status(200).json(generateResponseMessage(
+      "success",
+      course.material
+		));
+  } catch (error) {
+		logger.error(error)
+    console.error("Error fetching materials:", error);
+    return res.status(500).json(generateResponseMessage(
+      "error",
+      "Error fetching materials",
+		));
+  }
+});
+
+/** update materail for a course
+ * @swagger 
+ * /course/{courseId}/material/{materialId}:
+ *   put:
+ *     summary: Update material details for a course.
+ *     tags:
+ *       - course
+ *     description: Update the details of a material associated with a specific course using the course ID and material ID.
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         description: ID of the course to which the material belongs.
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: materialId
+ *         required: true
+ *         description: ID of the material to be updated.
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: material
+ *         required: true
+ *         description: Updated material object with new details.
+ *         schema:
+ *           type: object
+ *           properties:
+ *             url:
+ *               type: string
+ *               description: Updated URL of the material.
+ *             description:
+ *               type: string
+ *               description: Updated description of the material.
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: Updated URL of the material.
+ *               description:
+ *                 type: string
+ *                 description: Updated description of the material.
+ *     responses:
+ *       200:
+ *         description: Successful operation. Material details updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Material updated successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Material'   # Reference the "Material" schema here
+ *       404:
+ *         description: Not Found. The specified course or material was not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Material not found
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Error updating material.
+ * components:
+ *   schemas:
+ *     Material:
+ *       type: object
+ *       properties:
+ *         url:
+ *           type: string
+ *         addedBy:
+ *           type: string
+ *         description:
+ *           type: string
+ */
+router.put("/:courseId/material/:materialId", async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+    const materialId = req.params.materialId;
+		const addedBy = req.id
+    const { url, description } = req.body;
+
+    // Find the course by ID
+    const course = await Course.findById(courseId);
+
+    // Find the index of the material in the material array
+    const materialIndex = course.material.findIndex((material) => material._id.equals(materialId));
+
+    if (materialIndex === -1) {
+      return res.status(404).json(generateResponseMessage(
+        "error",
+        "Material not found"
+			))
+    }
+
+    // Update the material fields
+    course.material[materialIndex].url = url;
+    course.material[materialIndex].addedBy = addedBy;
+    course.material[materialIndex].description = description;
+
+    // Save the updated course
+    await course.save();
+
+    return res.status(200).json(generateResponseMessage(
+      "success: Material updated successfully",
+      course.material[materialIndex]
+		))
+  } catch (error) {
+		logger.error(error)
+    console.error("Error updating material:", error);
+    return res.status(500).json(generateResponseMessage(
+      "error",
+      "Error updating material",
+		))
+  }
+});
+
+/** delete material for a course
+ * @swagger 
+ * /course/{courseId}/material/{materialId}:
+ *   delete:
+ *     summary: Delete material from a course.
+ *     tags:
+ *       - course
+ *     description: Delete a material associated with a specific course using the course ID and material ID.
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         description: ID of the course from which the material will be deleted.
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: materialId
+ *         required: true
+ *         description: ID of the material to be deleted.
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     responses:
+ *       200:
+ *         description: Successful operation. Material deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Material deleted successfully
+ *       404:
+ *         description: Not Found. The specified course or material was not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Material not found
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Error deleting material.
+ */
+router.delete("/:courseId/material/:materialId", async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+    const materialId = req.params.materialId;
+
+    // Find the course by ID
+    const course = await Course.findById(courseId);
+
+    // Find the index of the material in the material array
+    const materialIndex = course.material.findIndex((material) => material._id.equals(materialId));
+
+    if (materialIndex === -1) {
+      return res.status(404).json(generateResponseMessage(
+        "error",
+        "Material not found"
+			));
+    }
+
+    // Remove the material from the material array
+    course.material.splice(materialIndex, 1);
+
+    // Save the updated course
+    await course.save();
+
+    return res.status(200).json(generateResponseMessage(
+      "success",
+      "Material deleted successfully"
+		))
+  } catch (error) {
+		logger.error(error)
+    console.error("Error deleting material:", error);
+    return res.status(500).json(generateResponseMessage(
+      "error",
+      "Error deleting material"
+		))
+  }
+});
+
+
+
+
+
+
+
+//lalallalaalalla 
+//lalalalalalalal
+//lalalalallalalal
+//lalalalallalalal
+//lalalalallalalal
+
+//lalalalallalalal
+//lalalalallalalal
+
+//lalalalallalalal
+
+
+
 
 
 // Assuming you have already imported the necessary modules and models
