@@ -321,6 +321,103 @@ router.get("/all", async (req, res) => {
   }
 });
 
+/** route for pending request
+ * @swagger
+ * /course/pending-requests:
+ *   get:
+ *     summary: Get all pending registration requests for superadmin.
+ *     description: Retrieve a list of pending registration requests accessible to a superadmin.
+ *     tags: [Pending Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of pending registration requests.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CourseWithRegistrations'
+ *       204:
+ *         description: No pending registration requests found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No pending registration requests
+ *       401:
+ *         description: Unauthorized, missing or invalid auth token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized, missing or invalid auth token.
+ *       403:
+ *         description: Forbidden, invalid user role.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Forbidden, invalid user role.
+ *       500:
+ *         description: Internal Server Error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error.
+ */
+router.get("/admin/pending", async (req, res) => {
+  try {
+    const userRole = req.role;
+
+    if (userRole !== USERROLE_CODES.SUPERADMIN) {
+      return res.status(403).json({
+        error: true,
+        message: "Forbidden, invalid user role",
+      });
+    }
+
+    const pendingRequests = await Course.find({
+      "registrations.state": 0,
+    }).populate("registrations.user", "firstname lastname");
+
+    if (pendingRequests.length === 0) {
+      return res
+        .status(204)
+        .json(generateResponseMessage("success", "No pending registration requests"));
+    }
+
+    return res.status(200).json(generateResponseMessage("success", pendingRequests));
+  } catch (err) {
+    logger.error(err);
+    console.error("Error fetching pending registration requests:", err);
+    return res.status(500).json(generateResponseMessage("error", "Internal Server Error"));
+  }
+});
+
 /** get detail of a specific course
  * @swagger
  * /course/{id}:
@@ -417,7 +514,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/**
+/** update a specific course
  * @swagger
  * /courses/{id}:
  *   put:
@@ -600,409 +697,7 @@ router.put("/:id", async (req, res) => {
     return res.status(500).json(generateResponseMessage("error", "Error updating course"));
   }
 });
-
-/** enroll a student in a course
- * @swagger
- * /course/enroll/{id}:
- *   post:
- *     summary: Enroll a student in a course.
- *     tags:
- *       - course
- *     description: Enroll a student in a course using the course ID. Only students are allowed to enroll.
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID of the course in which the student should be enrolled.
- *         schema:
- *           type: string
- *     security:
- *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
- *     responses:
- *       200:
- *         description: Successful operation. Returns the updated course data after enrollment.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
- *       400:
- *         description: Bad Request. Invalid request parameters or student is already enrolled in the course.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: User is already enrolled in the course.
- *       403:
- *         description: Forbidden. Only students are allowed to enroll in the course.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Only students are allowed to enroll in the course.
- *       404:
- *         description: Not Found. The requested course does not exist in the system.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Course not found
- *       500:
- *         description: Internal Server Error. An error occurred while processing the request.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Student enrollment failed.
- * components:
- *   schemas:
- *     Course:
- *       type: object
- *       properties:
- *         _id:
- *           type: string
- *         title:
- *           type: string
- *         subtitle:
- *           type: string
- *         description:
- *           type: string
- *         createdBy:
- *           type: string
- *         registrations:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               user:
- *                 type: string
- *               feedback:
- *                 type: array
- *                 items:
- *                   type: string
- */
-router.post("/enroll/:id", async (req, res) => {
-  try {
-    const courseId = req.params.id;
-
-    const role = req.role;
-    const id = req.id;
-
-    // Check if the user role is valid and is allowed to enroll in the course
-    if (role !== USERROLE_CODES.REGULAR) {
-      return res
-        .status(403)
-        .json(
-          generateResponseMessage(
-            "error",
-            "Only students are allowed to enroll in the course."
-          )
-        );
-    }
-
-    // Find the course by its ID
-    const course = await Course.findById(courseId);
-
-    if (!course) {
-      return res
-        .status(404)
-        .json(generateResponseMessage("error", "Course not found"));
-    }
-
-    // Check if the user is already enrolled in the course
-    const isEnrolled = course.registrations.some(
-      (registration) => registration.user.toString() === id.toString()
-    );
-
-    if (isEnrolled) {
-      return res
-        .status(400)
-        .json(
-          generateResponseMessage(
-            "error",
-            "User is already enrolled in the course."
-          )
-        );
-    }
-
-    // Create a new registration object for the student
-    const newRegistration = {
-      user: id,
-      state: REGISTRATIONSTATUS_CODES.REQUESTED, // You can set the initial state to REQUESTED or ACCEPTED based on your use case
-      requestedAt: new Date(),
-    };
-
-    // Add the registration to the course's registrations array
-    course.registrations.push(newRegistration);
-
-    // Save the updated course with the new registration
-    await course.save();
-
-    // Return the updated course data as a response
-    res.status(200).json(generateResponseMessage("success", course));
-  } catch (error) {
-    logger.error(error);
-    // Handle errors during the enrollment process
-    console.error("Error enrolling student:", error);
-    res
-      .status(500)
-      .json(generateResponseMessage("error", "Student enrollment failed"));
-  }
-});
-
-/** unenroll a student from a course
- * @swagger
- * /course/unenroll/{id}:
- *   post:
- *     summary: Unenroll a student from a course.
- *     tags:
- *       - course
- *     description: Unenroll a student from a course using the student's user ID and the course ID.
- *     security:
- *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the course to unenroll from.
- *     responses:
- *       200:
- *         description: Successful operation. Returns the updated course object after unenrollment.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
- *       400:
- *         description: Bad Request. User is not enrolled in the course or invalid course ID.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: User is not enrolled in the course.
- *       404:
- *         description: Not Found. Course with the specified ID not found.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Course not found.
- *       500:
- *         description: Internal Server Error. An error occurred while processing the request.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Student unenrollment failed.
- * components:
- *   schemas:
- *     Course:
- *       type: object
- *       properties:
- *         _id:
- *           type: string
- *         title:
- *           type: string
- *         subtitle:
- *           type: string
- *         description:
- *           type: string
- *         createdBy:
- *           type: string
- *         registrations:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               user:
- *                 type: string
- *               state:
- *                 type: number
- *               requestedAt:
- *                 type: string
- */
-router.post("/unenroll/:id", async (req, res) => {
-  try {
-    const courseId = req.params.id;
-    const userId = req.id;
-
-    // Find the course by its ID
-    const course = await Course.findById(courseId);
-
-    if (!course) {
-      return res
-        .status(404)
-        .json(generateResponseMessage("error", "Course not found"));
-    }
-
-    // Check if the user is enrolled in the course
-    const enrollmentIndex = course.registrations.findIndex(
-      (registration) => registration.user.toString() === userId.toString()
-    );
-
-    if (enrollmentIndex === -1) {
-      return res
-        .status(400)
-        .json(
-          generateResponseMessage(
-            "error",
-            "User is not enrolled in the course."
-          )
-        );
-    }
-
-    // Remove the enrollment from the course's registrations array
-    course.registrations.splice(enrollmentIndex, 1);
-
-    // Save the updated course without the unenrolled student
-    await course.save();
-
-    // Return the updated course data as a response
-    res.status(200).json(generateResponseMessage("success", course));
-  } catch (error) {
-    logger.error(error);
-    // Handle errors during the unenrollment process
-    console.error("Error unenrolling student:", error);
-    res
-      .status(500)
-      .json(generateResponseMessage("error", "Student unenrollment failed"));
-  }
-});
-
-/**
- * @swagger
- * /course/pending-requests:
- *   get:
- *     summary: Get all pending registration requests for superadmin.
- *     description: Retrieve a list of pending registration requests accessible to a superadmin.
- *     tags: [Pending Requests]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: A list of pending registration requests.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/CourseWithRegistrations'
- *       204:
- *         description: No pending registration requests found.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: No pending registration requests
- *       401:
- *         description: Unauthorized, missing or invalid auth token.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Unauthorized, missing or invalid auth token.
- *       403:
- *         description: Forbidden, invalid user role.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Forbidden, invalid user role.
- *       500:
- *         description: Internal Server Error.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Internal Server Error.
- */
-router.get("/pending-requests", async (req, res) => {
-  try {
-    const userRole = req.role; // Assuming the role is specified in the token
-
-    if (userRole !== USERROLE_CODES.SUPERADMIN) {
-      // Check if the user is an admin
-      return res
-        .status(403)
-        .json({ error: true, message: "Forbidden, invalid user role" });
-    }
-
-    // If the user is an admin, fetch all pending registration requests
-    const pendingRequests = await Course.find({
-      "registrations.state": 0, // Assuming 0 represents pending state for registration
-    }).populate("registrations.user", "firstname lastname"); // Populate user details
-
-    if (pendingRequests.length === 0) {
-      return res
-        .status(204)
-        .json(
-          generateResponseMessage("success", "No pending registration requests")
-        );
-    }
-
-    return res
-      .status(200)
-      .json(generateResponseMessage("success", pendingRequests));
-  } catch (err) {
-    logger.error(err);
-    console.error("Error fetching pending registration requests:", err);
-    return res
-      .status(500)
-      .json(generateResponseMessage("error", "Internal Server Error"));
-  }
-});
-
+ 
 //  CRUD FOR MATERIAL
 
 /** create materail for a course
@@ -1437,54 +1132,396 @@ router.delete("/:courseId/material/:materialId", async (req, res) => {
   }
 });
 
-//lalallalaalalla
-//lalalalalalalal
-//lalalalallalalal
-//lalalalallalalal
-//lalalalallalalal
+// STUDENT OPERATOINS
 
-//lalalalallalalal
-//lalalalallalalal
+/** enroll a student in a course
+ * @swagger
+ * /course/enroll/{id}:
+ *   post:
+ *     summary: Enroll a student in a course.
+ *     tags:
+ *       - course
+ *     description: Enroll a student in a course using the course ID. Only students are allowed to enroll.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID of the course in which the student should be enrolled.
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     responses:
+ *       200:
+ *         description: Successful operation. Returns the updated course data after enrollment.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
+ *       400:
+ *         description: Bad Request. Invalid request parameters or student is already enrolled in the course.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User is already enrolled in the course.
+ *       403:
+ *         description: Forbidden. Only students are allowed to enroll in the course.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Only students are allowed to enroll in the course.
+ *       404:
+ *         description: Not Found. The requested course does not exist in the system.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Course not found
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Student enrollment failed.
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         createdBy:
+ *           type: string
+ *         registrations:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
+ *                 type: string
+ *               feedback:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ */
+router.post("/enroll/:id", async (req, res) => {
+  try {
+    const courseId = req.params.id;
 
-//lalalalallalalal
+    const role = req.role;
+    const id = req.id;
 
-// Assuming you have already imported the necessary modules and models
+    // Check if the user role is valid and is allowed to enroll in the course
+    if (role !== USERROLE_CODES.REGULAR) {
+      return res
+        .status(403)
+        .json(
+          generateResponseMessage(
+            "error",
+            "Only students are allowed to enroll in the course."
+          )
+        );
+    }
 
-// API endpoint to get the list of registered courses for a user
-// router.get("/enrolled-courses", async (req, res) => {
-//   const authHeader = req.headers["authorization"];
-//   const token = authHeader && authHeader.split(" ")[1];
+    // Find the course by its ID
+    const course = await Course.findById(courseId);
 
-//   if (!token) {
-//     return res.status(401).json(generateResponseMessage("error", "Unauthorized, missing auth token."));
-//   }
+    if (!course) {
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Course not found"));
+    }
 
-//   try {
-//     // Decode the JWT token to get the user information
-//     const decodedToken = jwt.verify(token, "aspireinfoz");
-//     console.log("Decoded Token:", decodedToken);
+    // Check if the user is already enrolled in the course
+    const isEnrolled = course.registrations.some(
+      (registration) => registration.user.toString() === id.toString()
+    );
 
-//     const userId = decodedToken.id;
-// 		if (!userId) {
-//       return res.status(400).json({ message: "User ID not found in token" });
-//     }
-//     // Find the user by their ID
-//     const user = await User.findById(userId);
+    if (isEnrolled) {
+      return res
+        .status(400)
+        .json(
+          generateResponseMessage(
+            "error",
+            "User is already enrolled in the course."
+          )
+        );
+    }
 
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
+    // Create a new registration object for the student
+    const newRegistration = {
+      user: id,
+      state: REGISTRATIONSTATUS_CODES.REQUESTED, // You can set the initial state to REQUESTED or ACCEPTED based on your use case
+      requestedAt: new Date(),
+    };
 
-//     // Get the list of registered courses for the user
-//     const registeredCourses = await Course.find({ _id: { $in: user.registeredCourses } });
+    // Add the registration to the course's registrations array
+    course.registrations.push(newRegistration);
 
-//     // Return the list of registered courses
-//     res.status(200).json(registeredCourses);
-//   } catch (err) {
-//     console.error("Error fetching registered courses:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// });
+    // Save the updated course with the new registration
+    await course.save();
+
+    // Return the updated course data as a response
+    res.status(200).json(generateResponseMessage("success", course));
+  } catch (error) {
+    logger.error(error);
+    // Handle errors during the enrollment process
+    console.error("Error enrolling student:", error);
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Student enrollment failed"));
+  }
+});
+
+/** unenroll a student from a course
+ * @swagger
+ * /course/unenroll/{id}:
+ *   post:
+ *     summary: Unenroll a student from a course.
+ *     tags:
+ *       - course
+ *     description: Unenroll a student from a course using the student's user ID and the course ID.
+ *     security:
+ *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course to unenroll from.
+ *     responses:
+ *       200:
+ *         description: Successful operation. Returns the updated course object after unenrollment.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
+ *       400:
+ *         description: Bad Request. User is not enrolled in the course or invalid course ID.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User is not enrolled in the course.
+ *       404:
+ *         description: Not Found. Course with the specified ID not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Course not found.
+ *       500:
+ *         description: Internal Server Error. An error occurred while processing the request.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Student unenrollment failed.
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         createdBy:
+ *           type: string
+ *         registrations:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               user:
+ *                 type: string
+ *               state:
+ *                 type: number
+ *               requestedAt:
+ *                 type: string
+ */
+router.post("/unenroll/:id", async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const userId = req.id;
+
+    // Find the course by its ID
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Course not found"));
+    }
+
+    // Check if the user is enrolled in the course
+    const enrollmentIndex = course.registrations.findIndex(
+      (registration) => registration.user.toString() === userId.toString()
+    );
+
+    if (enrollmentIndex === -1) {
+      return res
+        .status(400)
+        .json(
+          generateResponseMessage(
+            "error",
+            "User is not enrolled in the course."
+          )
+        );
+    }
+
+    // Remove the enrollment from the course's registrations array
+    course.registrations.splice(enrollmentIndex, 1);
+
+    // Save the updated course without the unenrolled student
+    await course.save();
+
+    // Return the updated course data as a response
+    res.status(200).json(generateResponseMessage("success", course));
+  } catch (error) {
+    logger.error(error);
+    // Handle errors during the unenrollment process
+    console.error("Error unenrolling student:", error);
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Student unenrollment failed"));
+  }
+});
+
+/** for student to get list of enrolled courses
+ * @swagger
+ * /student/enrolled-courses:
+ *   get:
+ *     summary: Get the list of enrolled courses for the current user
+ *     description: Retrieve the list of courses that the current user is enrolled in.
+ *     tags: [Student]
+ *     responses:
+ *       '200':
+ *         description: Successful response with the list of enrolled courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Course'
+ *       '400':
+ *         description: User ID not found in token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *     security:
+ *       - bearerAuth: []
+ * components:
+ *   schemas:
+ *     Course:
+ *       type: object
+ *       properties:
+ *         title:
+ *           type: string
+ *         subtitle:
+ *           type: string
+ *         description:
+ *           type: string
+ *         rating:
+ *           $ref: '#/components/schemas/Rating'
+ *         registrations:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Registration'
+ *     Rating:
+ *       type: object
+ *       properties:
+ *         upvotes:
+ *           type: array
+ *           items:
+ *             type: string
+ *         downvotes:
+ *           type: array
+ *           items:
+ *             type: string
+ *     Registration:
+ *       type: object
+ *       properties:
+ *         user:
+ *           type: string
+ *         state:
+ *           type: integer
+ */
+router.get("/student/enrolled-courses", async (req, res) => {
+  try {
+    const userId = req.id;
+    if (!userId) {
+      return res.status(400).json(generateResponseMessage( "error","User ID not found in token" ));
+    }
+    
+    // Get the list of registered courses for the user with the given userId
+    const registeredCourses = await Course.find({ "registrations.user": userId }, {
+      title: 1,
+      subtitle: 1,
+      description: 1,
+      rating: 1,
+      "registrations.user": 1,
+      "registrations.state": 1
+    });
+
+    // Return the list of registered courses
+    res.status(200).json(generateResponseMessage("success",registeredCourses));
+  } catch (err) {
+		logger.error(err)
+    console.error("Error fetching registered courses:", err);
+    res.status(500).json(generateResponseMessage( "error","Internal Server Error" ));
+  }
+});
+
+
 
 // router.get("/trending", async (req, res) => {
 //     //not required to be logged in
