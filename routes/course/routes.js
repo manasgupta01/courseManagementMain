@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const {
   Course,
   MANAGERROLE_CODES,
+	COURSESTATUS_CODES,
   REGISTRATIONSTATUS_CODES,
 } = require("../../db/models/course/model");
 
@@ -12,7 +13,10 @@ const { User } = require("../../db/models/user/model");
 const { USERROLE_CODES } = require("../../db/models/user/model");
 
 // Validators
-const { createCourseValidator } = require("./validators");
+const {
+  createCourseValidator,
+  createMaterialValidator,
+} = require("./validators");
 
 // Helpers
 const { checkJwt } = require("../../helpers/jwt");
@@ -25,7 +29,7 @@ const logger = require("../../helpers/logger");
 const router = express.Router();
 
 // Middleware to check for valid JWT token in header (authorization)
-router.use(checkJwt)
+router.use(checkJwt);
 
 /** Route to create a new course, allowed only by the SUPERADMINS.
  * @swagger
@@ -98,11 +102,10 @@ router.use(checkJwt)
  *                   example: Not allowed for this role.
  */
 router.post("/", async (req, res) => {
-
   try {
     // Decode the JWT token to get the user information
     const role = req.role;
-		const id = req.id;
+    const id = req.id;
     const { title, subtitle, description, tags } = req.body;
 
     // Check if role is valid (only SUPERADMIN can create a course)
@@ -114,10 +117,12 @@ router.post("/", async (req, res) => {
 
     // Validate the request body
     createCourseValidator.validate(req.body);
-		if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string")) {
+    if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string")) {
       return res
         .status(400)
-        .json(generateResponseMessage("error", "Tags must be an array of strings."));
+        .json(
+          generateResponseMessage("error", "Tags must be an array of strings.")
+        );
     }
     // Create a new Course with the data
     const newCourseObject = {
@@ -137,8 +142,7 @@ router.post("/", async (req, res) => {
 
     res.status(200).json(generateResponseMessage("success", newCourseData));
   } catch (err) {
-
-		logger.error(err)
+    logger.error(err);
 
     // Handle different types of errors and return appropriate response messages
     if (err instanceof jwt.JsonWebTokenError) {
@@ -167,7 +171,7 @@ router.post("/", async (req, res) => {
 });
 
 /** get all detail courses for admin and necessary details for user
- * @swagger 
+ * @swagger
  * /course/all:
  *   get:
  *     summary: Get all courses.
@@ -269,23 +273,24 @@ router.post("/", async (req, res) => {
  *                   type: string
  */
 router.get("/all", async (req, res) => {
-
   try {
     // Decode the JWT token to get the user information
 
     const userId = req.id;
     const userRole = req.role; // Assuming the role is specified in the token
-   
+
     if (!userId || userRole.length == 0) {
       return res
         .status(400)
-        .json(generateResponseMessage("error","User ID or Role not found in token" ));
+        .json(
+          generateResponseMessage("error", "User ID or Role not found in token")
+        );
     }
 
     if (userRole === USERROLE_CODES.SUPERADMIN) {
       // If the user is an admin, fetch all courses with full details
       const courses = await Course.find().populate("createdByDetails"); // Populate createdByDetails
-      return res.status(200).json(generateResponseMessage("success",courses))
+      return res.status(200).json(generateResponseMessage("success", courses));
     } else if (userRole === USERROLE_CODES.REGULAR) {
       // If the user is a student, fetch only necessary details for each course
       const courses = await Course.find({ status: 1 })
@@ -301,23 +306,23 @@ router.get("/all", async (req, res) => {
           match: { state: 1 }, // Only include registrations with state === 1
         }); // Populate createdByDetails
 
-      return res.status(200).json(generateResponseMessage("success",courses))
+      return res.status(200).json(generateResponseMessage("success", courses));
     } else {
       return res
         .status(403)
-        .json(generateResponseMessage( "error","Forbidden, invalid user role" ))
+        .json(generateResponseMessage("error", "Forbidden, invalid user role"));
     }
   } catch (err) {
-		logger.error(err)
+    logger.error(err);
     console.error("Error fetching courses:", err);
     return res
       .status(500)
-      .json(generateResponseMessage( "error","Internal Server Error" ));
+      .json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
 
 /** get detail of a specific course
- * @swagger 
+ * @swagger
  * /course/{id}:
  *   get:
  *     summary: Get course details by ID.
@@ -396,116 +401,138 @@ router.get("/:id", async (req, res) => {
     const course = await Course.findById(courseId);
 
     if (!course) {
-      return res.status(404).json(generateResponseMessage( "error","Course Not Found" ));
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Course Not Found"));
     }
 
     // Return the course details
-    res.status(200).json(generateResponseMessage( "success",course));
+    res.status(200).json(generateResponseMessage("success", course));
   } catch (err) {
-		logger.error(err)
+    logger.error(err);
     console.error("Error fetching course details:", err);
-    res.status(500).json(generateResponseMessage("error", "Internal Server Error" ));
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
 
-/** update a course 
- * @swagger 
- * /course/{id}:
+/**
+ * @swagger
+ * /courses/{id}:
  *   put:
- *     summary: Update course details by ID.
+ *     security:
+ *       - bearerAuth: []   # Token-based authentication using JWT (Bearer token)
+ *     summary: Update a course by ID
+ *     description: Update a course's details by providing its ID.
  *     tags:
  *       - course
- *     description: Update the details of a specific course using its unique ID. Only admins can perform this action.
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         description: ID of the course to update.
  *         schema:
  *           type: string
- *     security:
- *       - bearerAuth: []    # Apply the "bearerAuth" security scheme to this endpoint
+ *         description: ID of the course to update.
  *     requestBody:
  *       required: true
- *       description: Course details to update.
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateCourseInput'   # Reference the "UpdateCourseInput" schema here
- *     responses:
- *       200:
- *         description: Successful operation. Returns the updated course details.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Course'   # Reference the "Course" schema here
- *       400:
- *         description: Bad Request. Invalid request parameters or data.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Invalid course status or manager role.
- *       404:
- *         description: Not Found. The requested course does not exist in the system.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Course not found
- *       500:
- *         description: Internal Server Error. An error occurred while processing the request.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Error updating course.
- * components:
- *   schemas:
- *     UpdateCourseInput:
- *       type: object
- *       properties:
- *         title:
- *           type: string
- *         subtitle:
- *           type: string
- *         description:
- *           type: string
- *         material:
- *           type: string
- *         managers:
- *           type: array
- *           items:
  *             type: object
  *             properties:
- *               user:
+ *               title:
  *                 type: string
- *               role:
+ *               subtitle:
  *                 type: string
- *                 enum: [instructor, ta, coordinator, assessor, auditor, college, industry]
- *         status:
- *           type: string
- *           enum: [draft, published, archived, finished]
+ *               description:
+ *                 type: string
+ *               material:
+ *                 type: string
+ *               managers:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               status:
+ *                 type: number
+ *                 enum: [0, 1, 2, 3]
+ *             example:
+ *               title: Updated Course Title
+ *               subtitle: Updated Course Subtitle
+ *               description: Updated course description.
+ *               material: Updated course material link.
+ *               managers: ['Manager1', 'Manager2']
+ *               status: 1
+ *     responses:
+ *       200:
+ *         description: Successful update. Returns the updated course data.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Course'  # Define Course schema in components section
+ *       400:
+ *         description: Bad Request. Invalid course status transition or validation errors.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 error:
+ *                   type: string
+ *                   example: Invalid course status transition.
+ *       403:
+ *         description: Unauthorized access. Only admin users are allowed to update courses.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 error:
+ *                   type: string
+ *                   example: Unauthorized access. Only admin users are allowed to update courses.
+ *       404:
+ *         description: Course not found. The specified course ID does not exist.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 error:
+ *                   type: string
+ *                   example: Course not found.
+ *       500:
+ *         description: Internal Server Error. Something went wrong on the server.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 error:
+ *                   type: string
+ *                   example: Error updating course.
  */
 router.put("/:id", async (req, res) => {
   try {
-   
     const userRole = req.role;
+    const courseId = req.params.id;
+    const { title, subtitle, description, material, managers, status } = req.body;
 
     // Check if the user is an admin using the authentication token
     if (userRole === USERROLE_CODES.SUPERADMIN) {
@@ -513,38 +540,37 @@ router.put("/:id", async (req, res) => {
       // Validate the request body
       createCourseValidator.validate(req.body);
 
-      const courseId = req.params.id;
-      const { title, subtitle, description, material, managers,status } = req.body;
+      // Fetch the existing course to get the current status
+      const existingCourse = await Course.findById(courseId);
+      if (!existingCourse) {
+        return res.status(404).json(generateResponseMessage("error", "Course not found"));
+      }
+
+      // Check if the provided status is a valid transition from the current status
+      const validTransitions = {
+        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.PUBLISHED],  // 0->1
+        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.FINISHED],   // 0->2
+        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.ARCHIVED],   // 0->3
+        [COURSESTATUS_CODES.PUBLISHED]: [COURSESTATUS_CODES.FINISHED],  //1->2
+        [COURSESTATUS_CODES.PUBLISHED]: [COURSESTATUS_CODES.ARCHIVED],  //1->3
+			  [COURSESTATUS_CODES.FINISHED]: [COURSESTATUS_CODES.ARCHIVED],  //2->3
+        [COURSESTATUS_CODES.ARCHIVED]: [COURSESTATUS_CODES.DRAFT],  //3->0
+      };
+
+      if (!validTransitions[existingCourse.status].includes(status)) {
+        return res.status(400).json(generateResponseMessage("error", "Invalid course status transition"));
+      }
 
       const updatedFields = {
         title,
         subtitle,
         description,
         material,
-				status
+        status,
       };
 
-			if (![COURSESTATUS_CODES.DRAFT, COURSESTATUS_CODES.PUBLISHED, COURSESTATUS_CODES.ARCHIVED, COURSESTATUS_CODES.FINISHED].includes(status)) {
-				return res.status(400).json(generateResponseMessage(
-					"error",
-					"Invalid course status"
-				))
-			}
       // Check if the request includes managers to add
       if (managers && Array.isArray(managers) && managers.length > 0) {
-        // Validate the manager roles and IDs before adding them
-        for (const manager of managers) {
-					if (![MANAGERROLE_CODES.INSTRUCTOR,
-						MANAGERROLE_CODES.TA,
-					MANAGERROLE_CODES.COORDINATOR,					// course administrators
-					MANAGERROLE_CODES.ASSESSOR,						// users who assist in assigning grades or feedback
-					MANAGERROLE_CODES.AUDITOR,							// users who just view all details	
-					MANAGERROLE_CODES.COLLEGE,							// auditors representing an educational institution
-					MANAGERROLE_CODES.INDUSTRY].includes(manager.role)) {
-						return res.status(400).json(generateResponseMessage("error", "Invalid manager role."));
-					}
-				}
-
         // Add the new managers to the course
         if (!updatedFields.managers) {
           updatedFields.managers = [];
@@ -553,9 +579,9 @@ router.put("/:id", async (req, res) => {
         updatedFields.managers.push(...managers);
       }
 
-			const updatedCourse = await Course.findOneAndUpdate(
-        { _id: courseId },
-        { $addToSet: { managers: { $each: managers } } },
+      const updatedCourse = await Course.findByIdAndUpdate(
+        courseId,
+        { $set: updatedFields },
         { new: true }
       );
 
@@ -565,17 +591,18 @@ router.put("/:id", async (req, res) => {
         return res.status(404).json(generateResponseMessage("error", "Course not found"));
       }
     } else {
-      // ... (same code as in the previous response)
+      // User is not an admin, handle accordingly (you can customize this part based on your application's logic)
+      return res.status(403).json(generateResponseMessage("error", "Unauthorized access. Only admin users are allowed to update courses."));
     }
   } catch (error) {
-		logger.error(err)
+		logger.error(error)
     console.error("Error updating course:", error);
     return res.status(500).json(generateResponseMessage("error", "Error updating course"));
   }
 });
 
 /** enroll a student in a course
- * @swagger 
+ * @swagger
  * /course/enroll/{id}:
  *   post:
  *     summary: Enroll a student in a course.
@@ -677,10 +704,10 @@ router.put("/:id", async (req, res) => {
 router.post("/enroll/:id", async (req, res) => {
   try {
     const courseId = req.params.id;
-    
-    const role = req.role
-			const id = req.id
-  
+
+    const role = req.role;
+    const id = req.id;
+
     // Check if the user role is valid and is allowed to enroll in the course
     if (role !== USERROLE_CODES.REGULAR) {
       return res
@@ -734,7 +761,7 @@ router.post("/enroll/:id", async (req, res) => {
     // Return the updated course data as a response
     res.status(200).json(generateResponseMessage("success", course));
   } catch (error) {
-		logger.error(error)
+    logger.error(error);
     // Handle errors during the enrollment process
     console.error("Error enrolling student:", error);
     res
@@ -744,7 +771,7 @@ router.post("/enroll/:id", async (req, res) => {
 });
 
 /** unenroll a student from a course
- * @swagger 
+ * @swagger
  * /course/unenroll/{id}:
  *   post:
  *     summary: Unenroll a student from a course.
@@ -833,7 +860,9 @@ router.post("/unenroll/:id", async (req, res) => {
     const course = await Course.findById(courseId);
 
     if (!course) {
-      return res.status(404).json(generateResponseMessage("error", "Course not found"));
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Course not found"));
     }
 
     // Check if the user is enrolled in the course
@@ -842,7 +871,14 @@ router.post("/unenroll/:id", async (req, res) => {
     );
 
     if (enrollmentIndex === -1) {
-      return res.status(400).json(generateResponseMessage("error", "User is not enrolled in the course."));
+      return res
+        .status(400)
+        .json(
+          generateResponseMessage(
+            "error",
+            "User is not enrolled in the course."
+          )
+        );
     }
 
     // Remove the enrollment from the course's registrations array
@@ -857,10 +893,11 @@ router.post("/unenroll/:id", async (req, res) => {
     logger.error(error);
     // Handle errors during the unenrollment process
     console.error("Error unenrolling student:", error);
-    res.status(500).json(generateResponseMessage("error", "Student unenrollment failed"));
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Student unenrollment failed"));
   }
 });
-
 
 /**
  * @swagger
@@ -931,7 +968,6 @@ router.post("/unenroll/:id", async (req, res) => {
  *                   example: Internal Server Error.
  */
 router.get("/pending-requests", async (req, res) => {
-
   try {
     const userRole = req.role; // Assuming the role is specified in the token
 
@@ -944,34 +980,38 @@ router.get("/pending-requests", async (req, res) => {
 
     // If the user is an admin, fetch all pending registration requests
     const pendingRequests = await Course.find({
-      "registrations.state": 0 ,// Assuming 0 represents pending state for registration
-    })
-		.populate("registrations.user", "firstname lastname"); // Populate user details
+      "registrations.state": 0, // Assuming 0 represents pending state for registration
+    }).populate("registrations.user", "firstname lastname"); // Populate user details
 
     if (pendingRequests.length === 0) {
-      return res.status(204).json(generateResponseMessage( "success", "No pending registration requests" ))
+      return res
+        .status(204)
+        .json(
+          generateResponseMessage("success", "No pending registration requests")
+        );
     }
 
-    return res.status(200).json(generateResponseMessage("success",pendingRequests))
+    return res
+      .status(200)
+      .json(generateResponseMessage("success", pendingRequests));
   } catch (err) {
-		logger.error(err)
+    logger.error(err);
     console.error("Error fetching pending registration requests:", err);
     return res
       .status(500)
-      .json(generateResponseMessage("error","Internal Server Error" ))
+      .json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
-
 
 //  CRUD FOR MATERIAL
 
 /** create materail for a course
- * @swagger 
+ * @swagger
  * /course/{courseId}/material:
  *   post:
  *     summary: Add a new material to a course.
  *     tags:
- *       - course
+ *       - material
  *     description: Add a new material to a course using the course ID.
  *     parameters:
  *       - in: path
@@ -1046,9 +1086,10 @@ router.get("/pending-requests", async (req, res) => {
 router.post("/:courseId/material", async (req, res) => {
   try {
     const courseId = req.params.courseId;
-		const addedBy = req.id
+    const addedBy = req.id;
     const { url, description } = req.body;
 
+    createMaterialValidator.validate(req.body);
     // Create a new material object
     const newMaterial = { url, addedBy, description };
 
@@ -1061,27 +1102,30 @@ router.post("/:courseId/material", async (req, res) => {
     // Save the updated course
     await course.save();
 
-    return res.status(201).json(generateResponseMessage(
-      "success: Material added successfully",
-      newMaterial
-		))
+    return res
+      .status(201)
+      .json(
+        generateResponseMessage(
+          "success: Material added successfully",
+          newMaterial
+        )
+      );
   } catch (error) {
-		logger.error(error)
+    logger.error(error);
     console.error("Error creating material:", error);
-    return res.status(500).json(generateResponseMessage(
-      "error",
-      "Error creating material"
-		));
+    return res
+      .status(500)
+      .json(generateResponseMessage("error", "Error creating material"));
   }
 });
 
 /**  read all the materials in a course
- * @swagger 
+ * @swagger
  * /course/{courseId}/material:
  *   get:
  *     summary: Get materials for a specific course.
  *     tags:
- *       - course
+ *       - material
  *     description: Retrieve the materials available for a specific course using the course ID.
  *     parameters:
  *       - in: path
@@ -1141,33 +1185,30 @@ router.get("/:courseId/material", async (req, res) => {
     const course = await Course.findById(courseId).select("material");
 
     if (!course) {
-      return res.status(404).json(generateResponseMessage(
-        "error",
-        "Course not found"
-			))
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Course not found"));
     }
 
-    return res.status(200).json(generateResponseMessage(
-      "success",
-      course.material
-		));
+    return res
+      .status(200)
+      .json(generateResponseMessage("success", course.material));
   } catch (error) {
-		logger.error(error)
+    logger.error(error);
     console.error("Error fetching materials:", error);
-    return res.status(500).json(generateResponseMessage(
-      "error",
-      "Error fetching materials",
-		));
+    return res
+      .status(500)
+      .json(generateResponseMessage("error", "Error fetching materials"));
   }
 });
 
 /** update materail for a course
- * @swagger 
+ * @swagger
  * /course/{courseId}/material/{materialId}:
  *   put:
  *     summary: Update material details for a course.
  *     tags:
- *       - course
+ *       - material
  *     description: Update the details of a material associated with a specific course using the course ID and material ID.
  *     parameters:
  *       - in: path
@@ -1259,20 +1300,22 @@ router.put("/:courseId/material/:materialId", async (req, res) => {
   try {
     const courseId = req.params.courseId;
     const materialId = req.params.materialId;
-		const addedBy = req.id
+    const addedBy = req.id;
     const { url, description } = req.body;
 
+    createMaterialValidator.validate(req.body);
     // Find the course by ID
     const course = await Course.findById(courseId);
 
     // Find the index of the material in the material array
-    const materialIndex = course.material.findIndex((material) => material._id.equals(materialId));
+    const materialIndex = course.material.findIndex((material) =>
+      material._id.equals(materialId)
+    );
 
     if (materialIndex === -1) {
-      return res.status(404).json(generateResponseMessage(
-        "error",
-        "Material not found"
-			))
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Material not found"));
     }
 
     // Update the material fields
@@ -1283,27 +1326,30 @@ router.put("/:courseId/material/:materialId", async (req, res) => {
     // Save the updated course
     await course.save();
 
-    return res.status(200).json(generateResponseMessage(
-      "success: Material updated successfully",
-      course.material[materialIndex]
-		))
+    return res
+      .status(200)
+      .json(
+        generateResponseMessage(
+          "success: Material updated successfully",
+          course.material[materialIndex]
+        )
+      );
   } catch (error) {
-		logger.error(error)
+    logger.error(error);
     console.error("Error updating material:", error);
-    return res.status(500).json(generateResponseMessage(
-      "error",
-      "Error updating material",
-		))
+    return res
+      .status(500)
+      .json(generateResponseMessage("error", "Error updating material"));
   }
 });
 
 /** delete material for a course
- * @swagger 
+ * @swagger
  * /course/{courseId}/material/{materialId}:
  *   delete:
  *     summary: Delete material from a course.
  *     tags:
- *       - course
+ *       - material
  *     description: Delete a material associated with a specific course using the course ID and material ID.
  *     parameters:
  *       - in: path
@@ -1361,13 +1407,14 @@ router.delete("/:courseId/material/:materialId", async (req, res) => {
     const course = await Course.findById(courseId);
 
     // Find the index of the material in the material array
-    const materialIndex = course.material.findIndex((material) => material._id.equals(materialId));
+    const materialIndex = course.material.findIndex((material) =>
+      material._id.equals(materialId)
+    );
 
     if (materialIndex === -1) {
-      return res.status(404).json(generateResponseMessage(
-        "error",
-        "Material not found"
-			));
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "Material not found"));
     }
 
     // Remove the material from the material array
@@ -1376,27 +1423,21 @@ router.delete("/:courseId/material/:materialId", async (req, res) => {
     // Save the updated course
     await course.save();
 
-    return res.status(200).json(generateResponseMessage(
-      "success",
-      "Material deleted successfully"
-		))
+    return res
+      .status(200)
+      .json(
+        generateResponseMessage("success", "Material deleted successfully")
+      );
   } catch (error) {
-		logger.error(error)
+    logger.error(error);
     console.error("Error deleting material:", error);
-    return res.status(500).json(generateResponseMessage(
-      "error",
-      "Error deleting material"
-		))
+    return res
+      .status(500)
+      .json(generateResponseMessage("error", "Error deleting material"));
   }
 });
 
-
-
-
-
-
-
-//lalallalaalalla 
+//lalallalaalalla
 //lalalalalalalal
 //lalalalallalalal
 //lalalalallalalal
@@ -1406,10 +1447,6 @@ router.delete("/:courseId/material/:materialId", async (req, res) => {
 //lalalalallalalal
 
 //lalalalallalalal
-
-
-
-
 
 // Assuming you have already imported the necessary modules and models
 

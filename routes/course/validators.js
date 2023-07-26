@@ -1,5 +1,5 @@
 const Joi = require('joi')
-
+const COURSESTATUS_CODES = require("../../db/models/course/model");
 // Define the schema for name
 const nameSchema = Joi.string()
 	.min(2)
@@ -58,10 +58,29 @@ const createCourseValidator = Joi.object({
 	name:					nameSchema,
 	subtitle:			subtitleSchema,
 	description:	descriptionSchema,
-	tags:					tagsSchema
+	tags:					tagsSchema,
+	status: Joi.number()
 })
 
 // Export the schemas
-module.exports = { 
-	createCourseValidator
-}
+// Define the schema for URL
+const urlSchema = Joi.string()
+	.uri()
+	.required()
+	.messages({
+		'string.base': 'URL should be a string.',
+		'any.required': 'URL is a mandatory field.',
+		'string.uri': 'URL must be a valid URL.'
+	});
+
+// Define the schema for description
+const createMaterialValidator = Joi.object({
+	url: urlSchema,
+	description: descriptionSchema
+});
+
+// Export the schemas
+module.exports = {
+	createCourseValidator,
+	createMaterialValidator
+};
