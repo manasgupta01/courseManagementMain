@@ -1,11 +1,51 @@
-// External Import
+// External Imports
 const express = require("express");
 const jwt = require("jsonwebtoken");
-// Database
+const fs = require('fs');
+const multer = require('multer');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+const checkImage = require("../../helpers/imageValidator");
+
+// Create an instance of Express Router
+const router = express.Router();
+
+// Middleware to check for valid JWT token in header (authorization)
+// This middleware, checkJwt, is responsible for validating the JWT token
+// included in the request header. It is used to authenticate and authorize
+// the user making the request. If the token is valid and not expired, the
+// request proceeds to the next middleware or route handler. If the token
+// is invalid or expired, it returns a 401 Unauthorized response.
+router.use(checkJwt);
+
+// Modify the Multer storage configuration to use memoryStorage
+// The multer middleware is used for handling file uploads. In this code,
+// we configure the storage option to use the "diskStorage" mode, where
+// uploaded files are saved to the 'public/uploads/' directory with a
+// unique filename generated using the UUIDv4 library and the original file
+// extension. The uploaded files will be temporarily stored on the disk
+// before being processed further.
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads/');
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const uniqueFilename = uuidv4() + ext;
+    cb(null, uniqueFilename);
+  }
+});
+
+// Create an instance of multer using the configured storage
+const upload = multer({ storage });
+
+// Database Models
+// Importing database models related to courses and users for database operations
 const {
   Course,
   MANAGERROLE_CODES,
-	COURSESTATUS_CODES,
+  COURSESTATUS_CODES,
   REGISTRATIONSTATUS_CODES,
 } = require("../../db/models/course/model");
 
@@ -13,23 +53,147 @@ const { User } = require("../../db/models/user/model");
 const { USERROLE_CODES } = require("../../db/models/user/model");
 
 // Validators
+// Importing validator functions to validate incoming data
 const {
   createCourseValidator,
   createMaterialValidator,
 } = require("./validators");
 
 // Helpers
+// Importing various helper functions for JWT verification and response generation
 const { checkJwt } = require("../../helpers/jwt");
 const { generateResponseMessage } = require("../../helpers/response");
 
 // Logger
+// Importing a helper function for logging errors and other messages
 const logger = require("../../helpers/logger");
 
-// Instantiating the router object
-const router = express.Router();
+// Middleware to check image size, aspect ratio, and type
+// Importing a custom middleware, checkImage, which is responsible for checking
+// the size, aspect ratio, and type of the uploaded image. This middleware is used
+// to ensure that the uploaded image meets the specified requirements. If the image
+// fails any of the checks, an error response is returned, and the uploaded file
+// is deleted.
 
-// Middleware to check for valid JWT token in header (authorization)
-router.use(checkJwt);
+/** Route to upload an image and store its url in course and image inn public folder
+ * @swagger
+ * /upload-image/{id}:
+ *   post:
+ *     summary: Upload an image for a course.
+ *     description: Uploads an image for a course and associates it with the specified course ID. Only SUPERADMIN users can perform this action.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the course to associate with the uploaded image.
+ *         schema:
+ *           type: string
+ *       - in: formData
+ *         name: image
+ *         required: true
+ *         description: The image file to upload.
+ *         type: file
+ *     responses:
+ *       200:
+ *         description: Successful response with the URL of the uploaded image.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: string
+ *                   format: uri
+ *                   example: /uploads/image-file.jpg
+ *       400:
+ *         description: Bad request due to missing image or image size/aspect ratio/type validation failure.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: No image uploaded or validation error message.
+ *       403:
+ *         description: Forbidden error when the user role is not SUPERADMIN.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Not allowed for this role.
+ *       404:
+ *         description: Course not found error when the specified course ID is invalid or not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Course not found.
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error.
+ */
+router.post("/upload-image/:id", upload.single("image"), checkImage ,async (req, res) => {
+  try {
+    const id = req.params.id;
+    const role = req.role; // You need to extract the role from the request
+
+    // Check if role is valid (only SUPERADMIN can create a course)
+    if (role !== USERROLE_CODES.SUPERADMIN) {
+      return res
+        .status(403)
+        .json(generateResponseMessage("error", "Not allowed for this role."));
+    }
+
+    if (req.file) {
+      const imageUrl = '/uploads/' + req.file.filename;
+      res.json(generateResponseMessage("success", imageUrl ));
+
+      // Update the course document with the new image URL
+      const updatedCourse = await Course.findOneAndUpdate(
+        { _id: id }, // Query condition to find the course by ID
+        { pic: imageUrl }, // Update object with the new image URL
+        { new: true } // Return the updated course object
+      );
+
+      if (!updatedCourse) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      // Handle the successful update if needed
+    } else {
+      // No image was uploaded
+      res.status(400).json({ message: "No image uploaded" });
+    }
+  } catch (err) {
+    logger.error(err);
+    // Handle any errors that occurred during the upload
+    console.error("Error uploading image:", err.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 /** Route to create a new course, allowed only by the SUPERADMINS.
  * @swagger

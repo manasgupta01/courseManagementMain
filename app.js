@@ -23,6 +23,7 @@ const { connectToDatabase } = require("./helpers/db")
 
 // Creating Express App
 const app = express()
+
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
