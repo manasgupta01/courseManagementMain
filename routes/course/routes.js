@@ -1,44 +1,24 @@
 // External Imports
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
+dotenv.config();
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+const sizeOf = require('image-size');
 const fs = require('fs');
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-
-const checkImage = require("../../helpers/imageValidator");
-
+const mime = require('mime');
 // Create an instance of Express Router
+const upload = require('../../helpers/imageStorage')
+const checkImage = require("../../helpers/imageValidator")
 const router = express.Router();
+//const router1 = express.Router();
 
-// Middleware to check for valid JWT token in header (authorization)
-// This middleware, checkJwt, is responsible for validating the JWT token
-// included in the request header. It is used to authenticate and authorize
-// the user making the request. If the token is valid and not expired, the
-// request proceeds to the next middleware or route handler. If the token
-// is invalid or expired, it returns a 401 Unauthorized response.
-router.use(checkJwt);
 
-// Modify the Multer storage configuration to use memoryStorage
-// The multer middleware is used for handling file uploads. In this code,
-// we configure the storage option to use the "diskStorage" mode, where
-// uploaded files are saved to the 'public/uploads/' directory with a
-// unique filename generated using the UUIDv4 library and the original file
-// extension. The uploaded files will be temporarily stored on the disk
-// before being processed further.
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads/');
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const uniqueFilename = uuidv4() + ext;
-    cb(null, uniqueFilename);
-  }
-});
-
-// Create an instance of multer using the configured storage
-const upload = multer({ storage });
+// middleware for image storage and upload
+//const checkImage = require("../../helpers/imageValidator");
+//const upload = require("../../helpers/imageStorage");
 
 // Database Models
 // Importing database models related to courses and users for database operations
@@ -62,138 +42,58 @@ const {
 // Helpers
 // Importing various helper functions for JWT verification and response generation
 const { checkJwt } = require("../../helpers/jwt");
+const { checkJwtForImage } = require("../../helpers/jwtForImageUpload");
+
 const { generateResponseMessage } = require("../../helpers/response");
 
 // Logger
 // Importing a helper function for logging errors and other messages
 const logger = require("../../helpers/logger");
 
-// Middleware to check image size, aspect ratio, and type
-// Importing a custom middleware, checkImage, which is responsible for checking
-// the size, aspect ratio, and type of the uploaded image. This middleware is used
-// to ensure that the uploaded image meets the specified requirements. If the image
-// fails any of the checks, an error response is returned, and the uploaded file
-// is deleted.
+//router.use(checkJwtForImage);
+router.use(checkJwt);
 
-/** Route to upload an image and store its url in course and image inn public folder
- * @swagger
- * /upload-image/{id}:
- *   post:
- *     summary: Upload an image for a course.
- *     description: Uploads an image for a course and associates it with the specified course ID. Only SUPERADMIN users can perform this action.
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: The ID of the course to associate with the uploaded image.
- *         schema:
- *           type: string
- *       - in: formData
- *         name: image
- *         required: true
- *         description: The image file to upload.
- *         type: file
- *     responses:
- *       200:
- *         description: Successful response with the URL of the uploaded image.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: string
- *                   format: uri
- *                   example: /uploads/image-file.jpg
- *       400:
- *         description: Bad request due to missing image or image size/aspect ratio/type validation failure.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: No image uploaded or validation error message.
- *       403:
- *         description: Forbidden error when the user role is not SUPERADMIN.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Not allowed for this role.
- *       404:
- *         description: Course not found error when the specified course ID is invalid or not found.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Course not found.
- *       500:
- *         description: Internal server error.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Internal Server Error.
- */
-router.post("/upload-image/:id", upload.single("image"), checkImage ,async (req, res) => {
+router.post("/upload-image/:id",checkJwtForImage,upload.single("image"), checkImage,async (req, res) => {
   try {
     const id = req.params.id;
-    const role = req.role; // You need to extract the role from the request
-
-    // Check if role is valid (only SUPERADMIN can create a course)
-    if (role !== USERROLE_CODES.SUPERADMIN) {
-      return res
-        .status(403)
-        .json(generateResponseMessage("error", "Not allowed for this role."));
-    }
-
-    if (req.file) {
-      const imageUrl = '/uploads/' + req.file.filename;
-      res.json(generateResponseMessage("success", imageUrl ));
-
-      // Update the course document with the new image URL
-      const updatedCourse = await Course.findOneAndUpdate(
-        { _id: id }, // Query condition to find the course by ID
-        { pic: imageUrl }, // Update object with the new image URL
-        { new: true } // Return the updated course object
-      );
-
-      if (!updatedCourse) {
-        return res.status(404).json({ message: "Course not found" });
-      }
-
-      // Handle the successful update if needed
-    } else {
+		
+    // If the user is a SUPERADMIN or a coordinator manager and authorized, proceed with the image upload
+    if (!req.file) {
       // No image was uploaded
-      res.status(400).json({ message: "No image uploaded" });
+      return res.status(400).json({
+        status: "error",
+        message: "No image uploaded",
+      });
     }
+	
+
+    const imageUrl = process.env.IMAGE_UPLOAD_PATH + req.file.filename;
+    // Update the course document with the new image URL
+    const updatedCourse = await Course.findOneAndUpdate(
+      { _id: id }, // Query condition to find the course by ID
+      { pic: imageUrl }, // Update object with the new image URL
+      { new: true } // Return the updated course object
+    );
+    if (!updatedCourse) {
+      return res.status(404).json(generateResponseMessage("error", "Course not found"));
+    }
+    // Handle the successful update if needed
+    // Additional logic can be added here to handle any further actions
+    // required after successfully updating the course.
+    // Send the success response with the image URL
+    res.json({
+      status: "success",
+      message: "Image uploaded and course updated successfully.",
+      imageUrl: imageUrl,
+    });
   } catch (err) {
-    logger.error(err);
-    // Handle any errors that occurred during the upload
+    // Catch any errors that occurred during the upload
+    // In case of an error, log the error and return a 500 Internal Server Error response.
     console.error("Error uploading image:", err.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
+
 
 /** Route to create a new course, allowed only by the SUPERADMINS.
  * @swagger
@@ -571,14 +471,20 @@ router.get("/admin/pending", async (req, res) => {
     if (pendingRequests.length === 0) {
       return res
         .status(204)
-        .json(generateResponseMessage("success", "No pending registration requests"));
+        .json(
+          generateResponseMessage("success", "No pending registration requests")
+        );
     }
 
-    return res.status(200).json(generateResponseMessage("success", pendingRequests));
+    return res
+      .status(200)
+      .json(generateResponseMessage("success", pendingRequests));
   } catch (err) {
     logger.error(err);
     console.error("Error fetching pending registration requests:", err);
-    return res.status(500).json(generateResponseMessage("error", "Internal Server Error"));
+    return res
+      .status(500)
+      .json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
 
@@ -793,7 +699,8 @@ router.put("/:id", async (req, res) => {
   try {
     const userRole = req.role;
     const courseId = req.params.id;
-    const { title, subtitle, description, material, managers, status } = req.body;
+    const { title, subtitle, description, material, managers, status } =
+      req.body;
 
     // Check if the user is an admin using the authentication token
     if (userRole === USERROLE_CODES.SUPERADMIN) {
@@ -804,24 +711,31 @@ router.put("/:id", async (req, res) => {
       // Fetch the existing course to get the current status
       const existingCourse = await Course.findById(courseId);
       if (!existingCourse) {
-        return res.status(404).json(generateResponseMessage("error", "Course not found"));
+        return res
+          .status(404)
+          .json(generateResponseMessage("error", "Course not found"));
       }
 
       // Check if the provided status is a valid transition from the current status
       const validTransitions = {
-        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.PUBLISHED],  // 0->1
-        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.FINISHED],   // 0->2
-        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.ARCHIVED],   // 0->3
-        [COURSESTATUS_CODES.PUBLISHED]: [COURSESTATUS_CODES.FINISHED],  //1->2
-        [COURSESTATUS_CODES.PUBLISHED]: [COURSESTATUS_CODES.ARCHIVED],  //1->3
-			  [COURSESTATUS_CODES.FINISHED]: [COURSESTATUS_CODES.ARCHIVED],  //2->3
-        [COURSESTATUS_CODES.ARCHIVED]: [COURSESTATUS_CODES.DRAFT],  //3->0
+        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.PUBLISHED], // 0->1
+        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.FINISHED], // 0->2
+        [COURSESTATUS_CODES.DRAFT]: [COURSESTATUS_CODES.ARCHIVED], // 0->3
+        [COURSESTATUS_CODES.PUBLISHED]: [COURSESTATUS_CODES.FINISHED], //1->2
+        [COURSESTATUS_CODES.PUBLISHED]: [COURSESTATUS_CODES.ARCHIVED], //1->3
+        [COURSESTATUS_CODES.FINISHED]: [COURSESTATUS_CODES.ARCHIVED], //2->3
+        [COURSESTATUS_CODES.ARCHIVED]: [COURSESTATUS_CODES.DRAFT], //3->0
       };
 
       if (!validTransitions[existingCourse.status].includes(status)) {
-        return res.status(400).json(generateResponseMessage("error", "Invalid course status transition"));
+        return res
+          .status(400)
+          .json(
+            generateResponseMessage("error", "Invalid course status transition")
+          );
       }
 
+      // Prepare the fields to be updated
       const updatedFields = {
         title,
         subtitle,
@@ -830,16 +744,32 @@ router.put("/:id", async (req, res) => {
         status,
       };
 
-      // Check if the request includes managers to add
+      // Check if the request includes managers to add or update
       if (managers && Array.isArray(managers) && managers.length > 0) {
-        // Add the new managers to the course
-        if (!updatedFields.managers) {
-          updatedFields.managers = [];
+        // Process each manager in the request
+        for (const manager of managers) {
+          const existingManager = existingCourse.managers.find(
+            (existingManager) =>
+              existingManager.managerId.toString() === manager.managerId
+          );
+
+          if (existingManager) {
+            // If the manager already exists in the course, update the role
+            existingManager.role = manager.role || existingManager.role;
+          } else {
+            // If the manager does not exist in the course, create a new manager
+            existingCourse.managers.push({
+              managerId: manager.managerId,
+              role: manager.role || MANAGERROLE_CODES.COORDINATOR,
+            });
+          }
         }
 
-        updatedFields.managers.push(...managers);
+        // Update the managers array in the updatedFields object
+        updatedFields.managers = existingCourse.managers;
       }
 
+      // Update the course with the updatedFields
       const updatedCourse = await Course.findByIdAndUpdate(
         courseId,
         { $set: updatedFields },
@@ -847,21 +777,34 @@ router.put("/:id", async (req, res) => {
       );
 
       if (updatedCourse) {
-        return res.status(200).json(generateResponseMessage("success", updatedCourse));
+        return res
+          .status(200)
+          .json(generateResponseMessage("success", updatedCourse));
       } else {
-        return res.status(404).json(generateResponseMessage("error", "Course not found"));
+        return res
+          .status(404)
+          .json(generateResponseMessage("error", "Course not found"));
       }
     } else {
       // User is not an admin, handle accordingly (you can customize this part based on your application's logic)
-      return res.status(403).json(generateResponseMessage("error", "Unauthorized access. Only admin users are allowed to update courses."));
+      return res
+        .status(403)
+        .json(
+          generateResponseMessage(
+            "error",
+            "Unauthorized access. Only admin users are allowed to update courses."
+          )
+        );
     }
   } catch (error) {
-		logger.error(error)
+    logger.error(error);
     console.error("Error updating course:", error);
-    return res.status(500).json(generateResponseMessage("error", "Error updating course"));
+    return res
+      .status(500)
+      .json(generateResponseMessage("error", "Error updating course"));
   }
 });
- 
+
 //  CRUD FOR MATERIAL
 
 /** create materail for a course
@@ -1663,29 +1606,34 @@ router.get("/student/enrolled-courses", async (req, res) => {
   try {
     const userId = req.id;
     if (!userId) {
-      return res.status(400).json(generateResponseMessage( "error","User ID not found in token" ));
+      return res
+        .status(400)
+        .json(generateResponseMessage("error", "User ID not found in token"));
     }
-    
+
     // Get the list of registered courses for the user with the given userId
-    const registeredCourses = await Course.find({ "registrations.user": userId }, {
-      title: 1,
-      subtitle: 1,
-      description: 1,
-      rating: 1,
-      "registrations.user": 1,
-      "registrations.state": 1
-    });
+    const registeredCourses = await Course.find(
+      { "registrations.user": userId },
+      {
+        title: 1,
+        subtitle: 1,
+        description: 1,
+        rating: 1,
+        "registrations.user": 1,
+        "registrations.state": 1,
+      }
+    );
 
     // Return the list of registered courses
-    res.status(200).json(generateResponseMessage("success",registeredCourses));
+    res.status(200).json(generateResponseMessage("success", registeredCourses));
   } catch (err) {
-		logger.error(err)
+    logger.error(err);
     console.error("Error fetching registered courses:", err);
-    res.status(500).json(generateResponseMessage( "error","Internal Server Error" ));
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
-
-
 
 // router.get("/trending", async (req, res) => {
 //     //not required to be logged in

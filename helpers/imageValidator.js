@@ -11,6 +11,7 @@ const fs = require('fs');
 const mime = require('mime');
 const { generateResponseMessage } = require('./response');
 
+
 const maxSizeInBytes = 1024 * 1024; // 1 MB
 const minAspectRatio = 1;
 const maxAspectRatio = 16 / 9;
@@ -55,4 +56,4 @@ const checkImage = (req, res, next) => {
   next();
 };
 
-module.exports = checkImage;
+module.exports = checkImage
