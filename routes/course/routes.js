@@ -30,7 +30,7 @@ const {
 } = require("../../db/models/course/model");
 
 const { User } = require("../../db/models/user/model");
-const { USERROLE_CODES } = require("../../db/models/user/model");
+const { USERROLE_CODES,USERSTATUS_CODES } = require("../../db/models/user/model");
 
 // Validators
 // Importing validator functions to validate incoming data
@@ -67,7 +67,7 @@ router.post("/upload-image/:id",checkJwtForImage,upload.single("image"),checkIma
     // }
 	
 
-    const imageUrl = process.env.IMAGE_UPLOAD_PATH + req.file.filename;
+    const imageUrl =   req.file.filename;
     // Update the course document with the new image URL
     const updatedCourse = await Course.findOneAndUpdate(
       { _id: id }, // Query condition to find the course by ID
@@ -464,10 +464,14 @@ router.get("/admin/pending", async (req, res) => {
       });
     }
 
-    const pendingRequests = await Course.find({
+		const pendingRequests = await Course.find({
       "registrations.state": 0,
-    }).populate("registrations.user", "firstname lastname");
-
+      status: COURSESTATUS_CODES.PUBLISHED,
+    }).populate({
+      path: "registrations.user",
+      select: "firstname lastname status",
+      match: { status: { $ne: USERSTATUS_CODES.BANNED } },
+    });
     if (pendingRequests.length === 0) {
       return res
         .status(204)
@@ -487,6 +491,7 @@ router.get("/admin/pending", async (req, res) => {
       .json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
+
 
 /** get detail of a specific course
  * @swagger
