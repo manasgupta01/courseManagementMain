@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const { generateResponseMessage } = require("./response");
 const logger = require("./logger");
 const { USERROLE_CODES } = require("../db/models/user/model");
-const { Course, COURSESTATUS_CODES } = require("../db/models/course/model"); // Import the Course model
+const { Course, COURSESTATUS_CODES,MANAGERROLE_CODES
+ } = require("../db/models/course/model"); // Import the Course model
 
 const sizeOf = require('image-size');
 const fs = require('fs');
@@ -38,27 +39,27 @@ const checkJwtForImage = async (req, res, next) => {
     const tokenDecoded = jwt.verify(token, process.env.SECRET_KEY);
     req.id = tokenDecoded.id;
     req.role = tokenDecoded.role;
-
-    if (req.role !== USERROLE_CODES.SUPERADMIN) {
-      return res.status(403).json(generateResponseMessage("error", "Not allowed for this role."));
-    }
-
-    // Continue with the check for the existing course
-    const cid = req.params.id;
-	//	console.log(cid)
-    const existingCourse = await Course.findById(cid)
-	//	console.log(existingCourse);
+		// Extracting the role from the request
+    const id = req.id;
+	//	const filePath = req.file.path;
+	const cid = req.params.id;
+    const existingCourse = await Course.findById(cid);
     if (!existingCourse) {
       return res.status(404).json(generateResponseMessage("error", "Course not found"));
     }
-
-    // If the course is archived, prevent further actions
     if (existingCourse.status === COURSESTATUS_CODES.ARCHIVED) {
       return res.status(409).json(generateResponseMessage("error", "Course is archived and cannot be updated."));
     }
+    const isCoordinator = existingCourse.managers.some(
+      (manager) => manager.managerId.toString() === id && manager.role === MANAGERROLE_CODES.COORDINATOR
+    );
 
-	
+    if (!isCoordinator && role !== USERROLE_CODES.SUPERADMIN) {
+      // User is not a SUPERADMIN or a coordinator manager, they are not allowed to make changes
+      return res.status(403).json(generateResponseMessage("error", "Not allowed for this role."));
+    }
 
+		
     // If everything is valid, proceed to the next middleware or route handler
     return next();
   } catch (err) {

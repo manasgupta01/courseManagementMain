@@ -53,18 +53,18 @@ const logger = require("../../helpers/logger");
 //router.use(checkJwtForImage);
 router.use(checkJwt);
 
-router.post("/upload-image/:id",checkJwtForImage,upload.single("image"), checkImage,async (req, res) => {
+router.post("/upload-image/:id",checkJwtForImage,upload.single("image"),checkImage,async (req, res) => {
   try {
     const id = req.params.id;
-		
+	//	console.log("file",req.file);
     // If the user is a SUPERADMIN or a coordinator manager and authorized, proceed with the image upload
-    if (!req.file) {
-      // No image was uploaded
-      return res.status(400).json({
-        status: "error",
-        message: "No image uploaded",
-      });
-    }
+    // if (!req.file) {
+    //   // No image was uploaded
+    //   return res.status(400).json({
+    //     status: "error",
+    //     message: "No image uploaded",
+    //   });
+    // }
 	
 
     const imageUrl = process.env.IMAGE_UPLOAD_PATH + req.file.filename;

@@ -1,16 +1,7 @@
-/**
- * Middleware to check the image size, aspect ratio, and image type before uploading.
- * @param {Object} req - Express request object containing the uploaded file.
- * @param {Object} res - Express response object to send the error response if validation fails.
- * @param {Function} next - Express next function to proceed to the next middleware/route handler if validation passes.
- * @returns {Object|Function} - Returns an error response object if validation fails or proceeds to the next middleware if validation passes.
- */
-
 const sizeOf = require('image-size');
 const fs = require('fs');
 const mime = require('mime');
 const { generateResponseMessage } = require('./response');
-
 
 const maxSizeInBytes = 1024 * 1024; // 1 MB
 const minAspectRatio = 1;
@@ -56,4 +47,4 @@ const checkImage = (req, res, next) => {
   next();
 };
 
-module.exports = checkImage
+module.exports = checkImage;
