@@ -17,6 +17,7 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions)
 const authRoutes = require("./routes/auth/routes")
 const connectionRoutes = require("./routes/connection/routes")
 const courseRoutes = require("./routes/course/routes")
+const userRoutes = require("./routes/userRoutes/routes")
 
 // DB Helper
 const { connectToDatabase } = require("./helpers/db")
@@ -33,6 +34,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use('/auth', authRoutes)
 app.use('/connection', connectionRoutes)
 app.use('/course', courseRoutes)
+app.use('/user', userRoutes)
 
 const dbConnectionSuccess = connectToDatabase()
 if (dbConnectionSuccess) {

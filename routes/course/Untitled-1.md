@@ -19,3 +19,10 @@ For Puran
 28th Jul
 1) Move multer and other helpers to helpers folder (middleware?), move the relative path to .env file
 2) Avoid adding duplicates to "managers in course" and replace if there is the same person added 
+
+
+01/08
+1)update model and schema
+2) create user route
+3) create update user info and upload pic routes
+4) create specific request for indvidual award , experience etc... using there id

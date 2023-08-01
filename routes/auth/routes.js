@@ -408,7 +408,7 @@ router.get('/verify/:otp', async (req, res) => {
  *         description: Server error
  */
 router.post("/login", async (req, res) => {
-
+    
 	// validate the request body
 	const { error } = loginValidator.validate(req.body)
 	if (error)
@@ -416,10 +416,12 @@ router.post("/login", async (req, res) => {
 
 	// body params
 	const { email, password } = req.body
+	console.log(User)
 
 	try {
 		// query db
 		const userDBObject = await User.findOne({ email })
+    
 
 		// if user not found
 		if (!userDBObject) {
@@ -431,11 +433,14 @@ router.post("/login", async (req, res) => {
 		if (!match) {
 			res.status(401).json({ message: 'Wrong password, unauthorized.' })
 		}
+ 
+
 
 		// if user is banned
 		if (userDBObject.status === USERSTATUS_CODES.BANNED) {
 			res.status(403).json({ message: 'Login Prohibited' })
 		}
+    console.log("hi")
 
 		// if user is temporary
 		if (userDBObject.status === USERSTATUS_CODES.TEMPORARY) {
@@ -455,6 +460,8 @@ router.post("/login", async (req, res) => {
 		const token = jwt.sign(tokenPayload, process.env.SECRET_KEY, {
 			expiresIn: Number(process.env.TOKEN_TIMEOUT)
 		})
+    
+
 
 		// issued
 		res.status(200).json({ token , message: 'Login Successful' })

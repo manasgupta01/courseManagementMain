@@ -4,21 +4,12 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
 const multer = require("multer");
-const { v4: uuidv4 } = require("uuid");
-const path = require("path");
-const sizeOf = require('image-size');
-const fs = require('fs');
-const mime = require('mime');
+
 // Create an instance of Express Router
 const upload = require('../../helpers/imageStorage')
 const checkImage = require("../../helpers/imageValidator")
 const router = express.Router();
 //const router1 = express.Router();
-
-
-// middleware for image storage and upload
-//const checkImage = require("../../helpers/imageValidator");
-//const upload = require("../../helpers/imageStorage");
 
 // Database Models
 // Importing database models related to courses and users for database operations
@@ -56,17 +47,6 @@ router.use(checkJwt);
 router.post("/upload-image/:id",checkJwtForImage,upload.single("image"),checkImage,async (req, res) => {
   try {
     const id = req.params.id;
-	//	console.log("file",req.file);
-    // If the user is a SUPERADMIN or a coordinator manager and authorized, proceed with the image upload
-    // if (!req.file) {
-    //   // No image was uploaded
-    //   return res.status(400).json({
-    //     status: "error",
-    //     message: "No image uploaded",
-    //   });
-    // }
-	
-
     const imageUrl =   req.file.filename;
     // Update the course document with the new image URL
     const updatedCourse = await Course.findOneAndUpdate(
@@ -87,6 +67,7 @@ router.post("/upload-image/:id",checkJwtForImage,upload.single("image"),checkIma
       imageUrl: imageUrl,
     });
   } catch (err) {
+		logger.error(err)
     // Catch any errors that occurred during the upload
     // In case of an error, log the error and return a 500 Internal Server Error response.
     console.error("Error uploading image:", err.message);
@@ -465,7 +446,7 @@ router.get("/admin/pending", async (req, res) => {
     }
 
 		const pendingRequests = await Course.find({
-      "registrations.state": 0,
+      "registrations.state": REGISTRATIONSTATUS_CODES.REQUESTED,
       status: COURSESTATUS_CODES.PUBLISHED,
     }).populate({
       path: "registrations.user",
@@ -1625,7 +1606,7 @@ router.get("/student/enrolled-courses", async (req, res) => {
         description: 1,
         rating: 1,
         "registrations.user": 1,
-        "registrations.state": 1,
+        "registrations.state": REGISTRATIONSTATUS_CODES.ACCEPTED,
       }
     );
 
