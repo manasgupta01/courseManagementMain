@@ -26,3 +26,4 @@ For Puran
 2) create user route
 3) create update user info and upload pic routes
 4) create specific request for indvidual award , experience etc... using there id
+5) remove unnecessary details fro get user
