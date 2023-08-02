@@ -21,35 +21,34 @@ const educationSchema = new mongoose.Schema({
     minLength: 3,
     maxLength: 100,
   },
-  degree: {
+  degree: { // frontend dropdown, backend limited items, foreign key
     type: String,
     required: true,
     minLength: 3,
     maxLength: 100,
   },
-  duration: {
+  duration: { // endYear, Number... startYear Number (optional), [1947, 2028] // this year + 5
     type: String,
     required: true,
     match: /^[0-9]{4}-[0-9]{4}$/,
   },
-  location: {
+  location: { // dropdown, ALL cities in India, foreign key
     type: String,
     required: true,
     minLength: 3,
     maxLength: 100,
   },
-  gpa: {
+  grade: {
     type: Number,
-    required: true,
-    min: 0,
-    max: 10.0,
+    required: true
   },
-  fieldOfStudy: {
+  fieldOfStudy: { // department, dropdown, compile a list of all such departments, foreign key
     type: String,
     required: true,
     minLength: 3,
     maxLength: 100,
   },
+	// affiliated to (optional) // get exhaustive list of all such colleges we can affiliate to
 });
 
 // Define the experience schema

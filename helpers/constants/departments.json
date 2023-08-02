@@ -1,0 +1,106 @@
+[
+	{
+		"name": "Computer Science",
+		"abbreviation": "CS"
+	},
+	{
+		"name": "Electrical Engineering",
+		"abbreviation": "EE"
+	},
+	{
+		"name": "Mechanical Engineering",
+		"abbreviation": "ME"
+	},
+	{
+		"name": "Civil Engineering",
+		"abbreviation": "CE"
+	},
+	{
+		"name": "Chemical Engineering",
+		"abbreviation": "ChE"
+	},
+	{
+		"name": "Electronics and Telecommunications",
+		"abbreviation": "ECE"
+	},
+	{
+		"name": "Information Technology",
+		"abbreviation": "IT"
+	},
+	{
+		"name": "Mathematics",
+		"abbreviation": "Math"
+	},
+	{
+		"name": "Physics",
+		"abbreviation": "Phys"
+	},
+	{
+		"name": "Chemistry",
+		"abbreviation": "Chem"
+	},
+	{
+		"name": "Biology",
+		"abbreviation": "Bio"
+	},
+	{
+		"name": "Economics",
+		"abbreviation": "Econ"
+	},
+	{
+		"name": "Business Administration",
+		"abbreviation": "MBA"
+	},
+	{
+		"name": "Accountancy",
+		"abbreviation": "Acc"
+	},
+	{
+		"name": "Law",
+		"abbreviation": "LLB"
+	},
+	{
+		"name": "Literature",
+		"abbreviation": "Lit"
+	},
+	{
+		"name": "History",
+		"abbreviation": "Hist"
+	},
+	{
+		"name": "Political Science",
+		"abbreviation": "PolSci"
+	},
+	{
+		"name": "Sociology",
+		"abbreviation": "Soc"
+	},
+	{
+		"name": "Education",
+		"abbreviation": "Ed"
+	},
+	{
+		"name": "Psychology",
+		"abbreviation": "Psych"
+	},
+	{
+		"name": "Languages",
+		"abbreviation": "Lang"
+	},
+	{
+		"name": "Fine Arts",
+		"abbreviation": "FA"
+	},
+	{
+		"name": "Design",
+		"abbreviation": "Des"
+	},
+	{
+		"name": "Health Sciences",
+		"abbreviation": "HS"
+	},
+	{
+		"name": "Engineering",
+		"abbreviation": "Eng"
+	}
+]

@@ -1,0 +1,8 @@
+github url's for json files Present in constants:
+affiliation.json :https://github.com/jaysoni-india/database/blob/master/indian_university_list.json
+citie.json:https://github.com/nshntarora/Indian-Cities-JSON/blob/master/cities.json
+degrees.json:https://gist.github.com/cblanquera/21c925d1312e9a4de3c269be134f3a6c
+departements.json: generted by chatgpt (not reliable but not available anywhere else)
+interests.json:https://gist.githubusercontent.com/carlelieser/884584d06b2d9429f321ec192f6dc7b5/raw/0888b5449ecda4787001b74811e645d0a74b8132/hobbies.json
+skills :1) softskiils :https://github.com/zauberware/skill-set-json/blob/master/data/skills.json
+        2) technical skills :https://github.com/dglittle/gitDesk/blob/master/skills.json

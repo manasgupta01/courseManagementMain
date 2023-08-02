@@ -1,0 +1,1347 @@
+[
+  {
+    "degree_title": "American Association for Respiratory Care Fellow",
+    "degree_reference": "AARCF",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "American Registry for Radiologic Technologists",
+    "degree_reference": "AART",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Applied Cognitive Psychology",
+    "degree_reference": "ACP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "AIDS Certified Registered Nurse",
+    "degree_reference": "ACRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Adult Nurse Practitioner",
+    "degree_reference": "ANP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Oncology Certified Nurse",
+    "degree_reference": "AOCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "American Oncology Certified Nurse",
+    "degree_reference": "AOCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Oncology Certified Nurse Practitioner",
+    "degree_reference": "AOCNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Project Management Certification",
+    "degree_reference": "APMC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Practice Nurse",
+    "degree_reference": "APN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Practice Nurse Prescriber",
+    "degree_reference": "APNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Practice Registered Nurse",
+    "degree_reference": "APRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Advanced Registered Nurse Practitioner",
+    "degree_reference": "ARNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "American Registry of Radiologic Technologists",
+    "degree_reference": "ARRT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Accredited Record Technologist",
+    "degree_reference": "ART",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "American Society for Clinical Pathology",
+    "degree_reference": "ASCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "American Society of Nuclear Cardiology",
+    "degree_reference": "ASNC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "American Society for Psychoprophylaxis in Obstetrics",
+    "degree_reference": "ASPO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Athletic Trainer, Certified",
+    "degree_reference": "ATC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Bach of Arts of Business Administration",
+    "degree_reference": "BABA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Board Certified - Palliative Care Management",
+    "degree_reference": "BCPCM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Ambulatory Post-Anesthesia Nurse",
+    "degree_reference": "CAPA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Addiction Registered Nurse",
+    "degree_reference": "CARN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Chemical and Biological Engineering",
+    "degree_reference": "CBE",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certificate in Breast Imaging",
+    "degree_reference": "CBI",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certificate of Clinical Competency",
+    "degree_reference": "CCC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certificate of Clinical Competence in Audiology",
+    "degree_reference": "CCCA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certificate of Clinical Competance in Speech language pathology",
+    "degree_reference": "CCCSLP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Continence Care Nurse",
+    "degree_reference": "CCCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Childbirth Educator",
+    "degree_reference": "CCE",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Cancer Exercise Specialist",
+    "degree_reference": "CCES",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Case Manager",
+    "degree_reference": "CCM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Critical Care Nurse Specialist",
+    "degree_reference": "CCNS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Clinical Perfusionist",
+    "degree_reference": "CCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Cardiovascular Perfusionist",
+    "degree_reference": "CCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Critical Care Registered Nurse",
+    "degree_reference": "CCRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Chiropractic Sports Physician",
+    "degree_reference": "CCSP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Chiropractic Certification in Spinal Trauma",
+    "degree_reference": "CCST",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Cardiovascular Technologist",
+    "degree_reference": "CCVT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Doula",
+    "degree_reference": "CD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Clinical Dietitian",
+    "degree_reference": "CD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Dental Assistant",
+    "degree_reference": "CDA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Dialysis Nurse",
+    "degree_reference": "CDN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Emergency Nurse",
+    "degree_reference": "CEN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Enterostomal Therapy Nurse",
+    "degree_reference": "CETN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Family Nurse Practitioner",
+    "degree_reference": "CFNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Flight Registered Nurse",
+    "degree_reference": "CFRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Gastroenterology Nurse",
+    "degree_reference": "CGN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Gastroenterology Registered Nurse",
+    "degree_reference": "CGRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Gastroenterology Technician",
+    "degree_reference": "CGT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Health Education Specialist",
+    "degree_reference": "CHES",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Hemodialysis Nurse",
+    "degree_reference": "CHN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "certified hospice and palliative nurse",
+    "degree_reference": "CHPN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Health Unit Coordinator",
+    "degree_reference": "CHUC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified in Infection Control",
+    "degree_reference": "CIC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Laboratory Assistant",
+    "degree_reference": "CLA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Licensed Practitioner Nursing, Intravenous",
+    "degree_reference": "CLPNI",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Clinical Laboratory Specialist",
+    "degree_reference": "CLS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Clinical Laboratory Scientist",
+    "degree_reference": "CLS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Laboratory Scientist",
+    "degree_reference": "CLS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Clinical Laboratory Technician",
+    "degree_reference": "CLT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Laboratory Technician",
+    "degree_reference": "CLT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Chirurgiae Magister",
+    "degree_reference": "CM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Midwife",
+    "degree_reference": "CM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Medical Assistant",
+    "degree_reference": "CMA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Medical Assistant - Administrative",
+    "degree_reference": "CMAA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Medical Assistant, Clinical",
+    "degree_reference": "CMAC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Medical-Surgical Registered Nurse",
+    "degree_reference": "CMSRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nursing Assistant",
+    "degree_reference": "CNA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified in Nursing Administration",
+    "degree_reference": "CNA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified in Nursing Administration, Advanced",
+    "degree_reference": "CNAA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nursing Director of Long-Term Care",
+    "degree_reference": "CNDLTC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nurse Midwifery",
+    "degree_reference": "CNM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nuclear Medical Technologist",
+    "degree_reference": "CNMT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nephrology Nurse",
+    "degree_reference": "CNN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nurse Practitioner",
+    "degree_reference": "CNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Community Nurse Practitioner",
+    "degree_reference": "CNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Neuroscience Registered Nurse",
+    "degree_reference": "CNRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Clinical Nurse Specialist",
+    "degree_reference": "CNS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Nutrition Support Nurse",
+    "degree_reference": "CNSN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Orthotist",
+    "degree_reference": "CO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Ostomy Care Nurse",
+    "degree_reference": "COCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Occupational Health Nurse",
+    "degree_reference": "COHN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Occupational Health Nurse - Specialist",
+    "degree_reference": "COHNS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Ophthalmic Medical Assistant",
+    "degree_reference": "COMA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Otorhinolaryngology Nurse",
+    "degree_reference": "CORLN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Operating Room Nurse",
+    "degree_reference": "CORN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Occupational Therapy Assistant",
+    "degree_reference": "COTA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Prosthetist",
+    "degree_reference": "CP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Prosthetist/Orthotist",
+    "degree_reference": "CPO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Post Anesthesia Nurse",
+    "degree_reference": "CPAN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Counseling Psychology and Counselor Education",
+    "degree_reference": "CPCE",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Peritoneal Dialysis Nurse",
+    "degree_reference": "CPDN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Pulmonary Function Technologist",
+    "degree_reference": "CPFT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Pediatric Nurse",
+    "degree_reference": "CPN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Pediatric Nurse Practioner",
+    "degree_reference": "CPNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Pediatric Oncology Nurse",
+    "degree_reference": "CPON",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Plastic Surgical Nurse",
+    "degree_reference": "CPSN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Radiologic Nurse",
+    "degree_reference": "CRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified registered nurse anesthetist",
+    "degree_reference": "CRNA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Registered Nurse First Assistant",
+    "degree_reference": "CRNFA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Registered Hospice Nurse",
+    "degree_reference": "CRNH",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Registered Nurse Infusion",
+    "degree_reference": "CRNI",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Registered Nurse in Ophthalmology",
+    "degree_reference": "CRNO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Rehabilitation Registered Nurse",
+    "degree_reference": "CRRN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "certified rehabilitation registered nurse – advanced",
+    "degree_reference": "CRRNA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Respiratory Therapist",
+    "degree_reference": "CRT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Respiratory Therapy Technician",
+    "degree_reference": "CRTT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified School Nurse",
+    "degree_reference": "CSN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Surgical Technologist",
+    "degree_reference": "CST",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Cytotechnologist",
+    "degree_reference": "CT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Urologic Clinical Nurse Specialist",
+    "degree_reference": "CUCNS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Urologic Nurse Practitioner",
+    "degree_reference": "CUNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Urology Registered Nurse",
+    "degree_reference": "CURN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Wound Care Nurse",
+    "degree_reference": "CWCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Wound, Ostomy, Continence Nurse",
+    "degree_reference": "CWOCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Dental Assistant",
+    "degree_reference": "DA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Diploma in Child Health",
+    "degree_reference": "DCH",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Diploma in Clinical Pathology",
+    "degree_reference": "DCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Diploma in Diagnostic Radiology",
+    "degree_reference": "DDR",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Dermatology Nurse Certified",
+    "degree_reference": "DNC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Director Of Nursing",
+    "degree_reference": "DON",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Education Specialist Certificate",
+    "degree_reference": "ESC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Education Specialist",
+    "degree_reference": "EDS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Electroencephalographic Technologist",
+    "degree_reference": "EEGT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Extraordinary Masochistic Tendencies (joke At Expense Of Emergency Medical Technicians)",
+    "degree_reference": "EMT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Emergency Medical Technician-Basic",
+    "degree_reference": "EMTB",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Emergency Medical Technician-Defibrillation",
+    "degree_reference": "EMTD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Emergency Medical Technician - Intermediate",
+    "degree_reference": "EMTI",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Emergency Medical Technician - Paramedic",
+    "degree_reference": "EMTP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Emergency Medical Technician-Paramedic",
+    "degree_reference": "EMTP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Emergency Nurse Practitioner",
+    "degree_reference": "ENP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Enterostomal Therapist",
+    "degree_reference": "ET",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Allergy and Immunology",
+    "degree_reference": "FAAAI",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american academy of family physicians",
+    "degree_reference": "FAAFP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Nursing",
+    "degree_reference": "FAAN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Neurology",
+    "degree_reference": "FAAN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Osteopathy",
+    "degree_reference": "FAAO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Ophthalmology",
+    "degree_reference": "FAAO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Orthopedic Surgeons",
+    "degree_reference": "FAAOS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Academy of Pediatrics",
+    "degree_reference": "FAAP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american college of allergy, asthma & immunology",
+    "degree_reference": "FACAAI",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american college of cardiology",
+    "degree_reference": "FACC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American College of Chest Physicians",
+    "degree_reference": "FACCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american college of dentists",
+    "degree_reference": "FACD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American College of Endocrinology",
+    "degree_reference": "FACE",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American College of Emergency Physicians",
+    "degree_reference": "FACEP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american college of gastroenterology",
+    "degree_reference": "FACG",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow Of The American College Of Obstetrics And Gynecology",
+    "degree_reference": "FACOG",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow American College of Osteopathic Obstetricians and Gynecologists",
+    "degree_reference": "FACOOG",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american college of physicians",
+    "degree_reference": "FACP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American College of Preventive Medicine",
+    "degree_reference": "FACPM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American College of Radiology",
+    "degree_reference": "FACR",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american college of surgeons",
+    "degree_reference": "FACS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American College of Sports Medicine",
+    "degree_reference": "FACSM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the Academy of General Dentistry",
+    "degree_reference": "FAGD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Medical Association",
+    "degree_reference": "FAMA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Occupational Therapy Association",
+    "degree_reference": "FAOTA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the american psychiatric association",
+    "degree_reference": "FAPA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the American Public Health Association",
+    "degree_reference": "FAPHA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the college of american pathologists",
+    "degree_reference": "FCAP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of Critical Care Medicine",
+    "degree_reference": "FCCM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "fellow of the college of physicians and surgeons",
+    "degree_reference": "FCPS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow in Dental Surgery",
+    "degree_reference": "FDS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow Of The Faculty Of Anaesthetists",
+    "degree_reference": "FFA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the Faculty of Anaesthetists of the Royal College of Surgeons",
+    "degree_reference": "FFARCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the International Chiropractic Association",
+    "degree_reference": "FICA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the International College of Chiropractors",
+    "degree_reference": "FICC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Fellow of the International College of Surgeons",
+    "degree_reference": "FICS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Family Nurse Practitioner",
+    "degree_reference": "FNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Histologic Technician",
+    "degree_reference": "HT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Histotechnologist",
+    "degree_reference": "HTL",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Acupuncturist",
+    "degree_reference": "LAC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Laboratory Animal Technician",
+    "degree_reference": "LAT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Athletic Trainer",
+    "degree_reference": "LAT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Athletic Trainer, Certified",
+    "degree_reference": "LATC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Lighting Certified",
+    "degree_reference": "LC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Lamaze Certified Childbirth Educator",
+    "degree_reference": "LCCE",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Clinical Professional Counselor",
+    "degree_reference": "LCPC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Clinical Social Worker",
+    "degree_reference": "LCSW",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Dietitian Nutritionist",
+    "degree_reference": "LDN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Dispensing Optician",
+    "degree_reference": "LDO",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Clinical Social Worker",
+    "degree_reference": "LICSW",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Midwife",
+    "degree_reference": "LM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Legal Nurse Consultant",
+    "degree_reference": "LNC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Legal Nurse Consultant Certified",
+    "degree_reference": "LNCC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed professional counselor",
+    "degree_reference": "LPC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Practice Nurse",
+    "degree_reference": "LPN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Physical Therapy",
+    "degree_reference": "LPT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licentiate of the Royal College of Physicians of London",
+    "degree_reference": "LRCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licentiate of the Royal College of Surgeons",
+    "degree_reference": "LRCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Visiting Nurse",
+    "degree_reference": "LVN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Vocational Nurse",
+    "degree_reference": "LVN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medical Examiner",
+    "degree_reference": "ME",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Marriage and Family Therapist",
+    "degree_reference": "MFT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medical Laboratory Technician",
+    "degree_reference": "MLT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medical Library Technician",
+    "degree_reference": "MLT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "member of the Royal College of Physicians",
+    "degree_reference": "MRCP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "member of the Royal College of Surgeons",
+    "degree_reference": "MRCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "medical records librarian",
+    "degree_reference": "MRL",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medical Record Technician",
+    "degree_reference": "MRT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medical Technologist",
+    "degree_reference": "MT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medical Technologist Assistant",
+    "degree_reference": "MTA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Medicas Veterinarius",
+    "degree_reference": "MV",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Nuclear Cardiology Technologist",
+    "degree_reference": "NCT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Nuclear Medicine Technologist",
+    "degree_reference": "NMT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Nurse Massage Therapist",
+    "degree_reference": "NMT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Nurse Practitioner",
+    "degree_reference": "NP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Nationally Registered Paramedic",
+    "degree_reference": "NREMTP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Oncology Certified Nurse",
+    "degree_reference": "OCN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Orthopedic Clinical Specialist",
+    "degree_reference": "OCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Occupational Health Nursing Clinical Specialist",
+    "degree_reference": "OHNCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Orthopedic Nurse Certified",
+    "degree_reference": "ONC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Occupational Therapist - Canada",
+    "degree_reference": "OTC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Occupational Therapist Assistant",
+    "degree_reference": "OTA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Orthopedic Technician, Certified",
+    "degree_reference": "OTC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Occupational Therapist Licensed",
+    "degree_reference": "OTL",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Occupational Therapist",
+    "degree_reference": "OTR",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Licensed Occupational Therapist",
+    "degree_reference": "OTRL",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Post-Baccalaureate Certificate",
+    "degree_reference": "PBC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Physician Assistant",
+    "degree_reference": "PA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Certified Physician's Assistant",
+    "degree_reference": "PAC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Physician's Assistant Certified",
+    "degree_reference": "PAC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Graduate in Pharmacy",
+    "degree_reference": "PHARMG",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Public Health Nurse",
+    "degree_reference": "PHN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Pediatric Nurse Practitioner",
+    "degree_reference": "PNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Physical Therapy Assistant",
+    "degree_reference": "PTA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Dietician",
+    "degree_reference": "RD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Dietitian",
+    "degree_reference": "RD",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Dental Assistant",
+    "degree_reference": "RDA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Diagnostic Cardiac Sonographer",
+    "degree_reference": "RDCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Dental Hygienist",
+    "degree_reference": "RDH",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Diagnostic Medical Sonographer",
+    "degree_reference": "RDMS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Radiologic Electroencephalography Technologist",
+    "degree_reference": "REEGT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Evoked Potentials Technologist",
+    "degree_reference": "REPT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Health Information Administrator",
+    "degree_reference": "RHIA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Health Information Technician",
+    "degree_reference": "RHIT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Medical Assistant",
+    "degree_reference": "RMA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Nurse",
+    "degree_reference": "RN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Nurse Anesthetist",
+    "degree_reference": "RNA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Nurse Certified",
+    "degree_reference": "RNC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Nurse Clinical Specialist",
+    "degree_reference": "RNCS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Nurse Practitioner",
+    "degree_reference": "RNP",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Ophthalmic Ultrasound Biometrist",
+    "degree_reference": "ROUB",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Pharmacist",
+    "degree_reference": "RPH",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Physical Therapist",
+    "degree_reference": "RPT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "registered record administrator",
+    "degree_reference": "RRA",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Respiratory Therapist",
+    "degree_reference": "RRT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Technologist",
+    "degree_reference": "RT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Recreation Therapist",
+    "degree_reference": "RT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Radiologic Technologist",
+    "degree_reference": "RT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Radiologic Technologist with specialization in Nuclear Medicine",
+    "degree_reference": "RTN",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Radiologic Technologist with specialization in Radiology",
+    "degree_reference": "RTR",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Radiologic Technologist with specialization in Radiation",
+    "degree_reference": "RTT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Recreational Therapist",
+    "degree_reference": "RTR",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Registered Vascular Technologist",
+    "degree_reference": "RVT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist Certificate",
+    "degree_reference": "SC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Library and Information Science",
+    "degree_reference": "SPL",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Blood Banking",
+    "degree_reference": "SBB",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Chemistry",
+    "degree_reference": "SC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Cytotechnology",
+    "degree_reference": "SCT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Hematology",
+    "degree_reference": "SH",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Laboratory Safety",
+    "degree_reference": "SLS",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Microbiology",
+    "degree_reference": "SM",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Surgical Technician",
+    "degree_reference": "ST",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Specialist in Virology",
+    "degree_reference": "SV",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Teaching Certificate",
+    "degree_reference": "TC",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Veterinary Technician",
+    "degree_reference": "VT",
+    "degree_level": "certification"
+  },
+  {
+    "degree_title": "Women's Health Nurse Practitioner",
+    "degree_reference": "WHNP",
+    "degree_level": "certification"
+  }
+]
