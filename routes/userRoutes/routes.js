@@ -43,7 +43,7 @@ router.get("/details", async (req, res) => {
 
   try {
     // Find the user by ID.
-    const users = await User.findById(userId);
+    const users = await User.findById(userId).select("-__v -role -password");
 
     if (!users) {
       // Return a 404 error if the user is not found.

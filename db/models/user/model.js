@@ -142,7 +142,7 @@ const userSchema = new mongoose.Schema({
 	phone: 			{ type: String, required: true },
 	username: 	{ type: String, required: true, unique: true },
 	college: 		{ type: String, required: true },
-	profilepic:	{ type: String, unique: true, default: "" },
+	pic:	{ type: String, unique: true, default: "" },
 
 	interests: 	{ type: [String], required: true, default: [] },
 
