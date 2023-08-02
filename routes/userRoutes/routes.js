@@ -18,7 +18,8 @@ const {
 
 const { generateResponseMessage } = require("../../helpers/response");
 
-const updateUserValidator = require("./validators");
+const { updateUserValidator} = require("./validators");
+const { awardsSchema,educationDetailsSchema,projectSchema,experienceValidationSchema } = require('./validators');
 
 const { checkJwt } = require("../../helpers/jwt");
 
@@ -159,56 +160,67 @@ router.post(
 @param {Request} req The request object.
 @param {Response} res The response object. 
 */ 
-router.put(
-  "/awards/:id",
-  async (req, res) => {
-    const awardId = req.params.id;
-//		updateUserValidator.validate(req.body);
-    const { name, date, institution, description } = req.body;
-		
-    try {
-      const updatedUser = await User.findByIdAndUpdate(
-        req.id,
-        {
-          $set: {
-            "awards.$[award].name": name,
-            "awards.[award].date": date,
-            "awards.[award].institution": institution,
-            "awards.$[award].description": description,
-          },
-        },
-        {
-          new: true,
-          arrayFilters: [{ "award._id": awardId }],
-        }
-      );
+router.put("/awards/:id", async (req, res) => {
+  const awardId = req.params.id;
+  const { name, date, institution, description } = req.body;
 
-      if (!updatedUser)
-        return res
-          .status(404)
-          .json(generateResponseMessage("error", "User not found"));
-      res.json(
-        generateResponseMessage(
-          "success",
-          "Award updated successfully",
-          updatedUser
-        )
-      );
-    } catch (error) {
-      console.error("Error:", error.message);
-      res
-        .status(500)
-        .json(generateResponseMessage("error", "Internal Server Error"));
-    }
+	const validationResult = awardsSchema.validate(req.body);
+  if (validationResult.error) {
+    // Validation failed
+    return res.status(400).json({ message: validationResult.error.message });
   }
-);
+  // Store the updated award data in a separate variable called 'data'
+  const data = {
+    "awards.$[award].name": name,
+    "awards.$[award].date": date,
+    "awards.$[award].institution": institution,
+    "awards.$[award].description": description,
+  };
+
+  try {
+    // console.log("Award ID:", awardId);
+    // console.log("User ID:", req.id);
+    // console.log("Updated Award Data:", data);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.id,
+      {
+        $set: data,
+      },
+      {
+        new: true,
+        arrayFilters: [{ "award._id": awardId }],
+      }
+    );
+
+    console.log("Updated User:", updatedUser);
+
+    if (!updatedUser)
+      return res
+        .status(404)
+        .json(generateResponseMessage("error", "User not found"));
+    else {
+      res.json(generateResponseMessage("success", updatedUser));
+    }
+  } catch (error) {
+    console.error("Error:", error.message);
+    res
+      .status(500)
+      .json(generateResponseMessage("error", "Internal Server Error"));
+  }
+});
 
 
-
+// update education
 router.put("/education/:id", async (req, res) => {
   const educationId = req.params.id;
   const { institution, degree, duration, location, gpa, fieldOfStudy } = req.body;
-//	const { error } = updateUserValidator.validate(userData);
+//	const { error } = educationDetailsSchema.validate(userData);
+const validationResult = educationDetailsSchema.validate(req.body);
+  if (validationResult.error) {
+    // Validation failed
+    return res.status(400).json({ message: validationResult.error.message });
+  }
   try {
     const updatedUser = await User.findByIdAndUpdate(
       req.id,
@@ -243,11 +255,11 @@ router.put('/update-experience/:id', async (req, res) => {
 
   try {
     // Validate the request body using the updateExperienceValidator
-    const { error } = updateExperienceValidator.validate(experienceData);
-    if (error) {
-      // If validation fails, return the error message
-      return res.status(400).json({ error: error.details[0].message });
-    }
+		const validationResult = experienceValidationSchema.validate(req.body);
+		if (validationResult.error) {
+			// Validation failed
+			return res.status(400).json({ message: validationResult.error.message });
+		}
 
     // Update the user's experience
     const updatedUser = await User.findByIdAndUpdate(userId, { $set: { experience: experienceData } }, { new: true });
@@ -267,32 +279,83 @@ router.put('/update-experience/:id', async (req, res) => {
 });
 
 // Route for updating projects
-router.put('/update-projects/:id', async (req, res) => {
-  const userId = req.params.id;
-  const projectsData = req.body;
+router.put("/projects/:id", async (req, res) => {
+  const projectId = req.params.id;
+  const { name, entity, duration, about, role, technologiesUsed, url } = req.body;
+
+  const validationResult = projectSchema.validate(req.body);
+  if (validationResult.error) {
+    // Validation failed
+    return res.status(400).json({ message: validationResult.error.message });
+  }
 
   try {
-    // Validate the request body using the updateProjectsValidator
-    const { error } = updateProjectsValidator.validate(projectsData);
-    if (error) {
-      // If validation fails, return the error message
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    // Update the user's projects
-    const updatedUser = await User.findByIdAndUpdate(userId, { $set: { projects: projectsData } }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.id,
+      {
+        $set: {
+          "projects.$[proj].name": name,
+          "projects.$[proj].entity": entity,
+          "projects.$[proj].duration": duration,
+          "projects.$[proj].about": about,
+          "projects.$[proj].role": role,
+          "projects.$[proj].technologiesUsed": technologiesUsed,
+          "projects.$[proj].url": url,
+        },
+      },
+      {
+        new: true,
+        arrayFilters: [{ "proj._id": projectId }],
+      }
+    );
 
     if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json(generateResponseMessage("error", "User not found"));
     }
 
-    res.json({
-      success: true,
-      user: updatedUser,
-    });
+    res.json(generateResponseMessage("success", "Project entry updated successfully", updatedUser));
   } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    console.error("Error:", error.message);
+    res.status(500).json(generateResponseMessage("error", "Internal Server Error"));
+  }
+});
+
+// update experience
+router.put("/experience/:id", async (req, res) => {
+  const experienceId = req.params.id;
+  const { working, company, position, duration } = req.body;
+
+  const validationResult = experienceDetailsSchema.validate(req.body);
+  if (validationResult.error) {
+    // Validation failed
+    return res.status(400).json({ message: validationResult.error.message });
+  }
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.id,
+      {
+        $set: {
+          "experience.$[exp].working": working,
+          "experience.$[exp].company": company,
+          "experience.$[exp].position": position,
+          "experience.$[exp].duration": duration,
+        },
+      },
+      {
+        new: true,
+        arrayFilters: [{ "exp._id": experienceId }],
+      }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json(generateResponseMessage("error", "User not found"));
+    }
+
+    res.json(generateResponseMessage("success", "Experience entry updated successfully", updatedUser));
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json(generateResponseMessage("error", "Internal Server Error"));
   }
 });
 

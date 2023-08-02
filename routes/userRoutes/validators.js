@@ -93,24 +93,41 @@ const aboutSchema = Joi.string()
 // Define the schema for education details
 const educationDetailsSchema = Joi.object({
   institution: Joi.string().min(3).max(100).required(),
-  degree: Joi.string().min(3).max(100).required(),
-  duration: Joi.string().required().pattern(/^[0-9]{4} - [0-9]{4}$/),
-  location: Joi.string().min(3).max(100).required(),
-  gpa: Joi.number().min(0).max(10).required(),
-  fieldOfStudy: Joi.string().min(3).max(100).required(),
+  degree: Joi.string().min(3).max(100),
+  duration: Joi.string().pattern(/^[0-9]{4} - [0-9]{4}$/),
+  location: Joi.string().min(3).max(100),
+  gpa: Joi.number().min(0).max(10),
+  fieldOfStudy: Joi.string().min(3).max(100),
 });
 
 // Define the schema for skills
 const skillsSchema = Joi.array().items(Joi.string().required());
 
 // Define the schema for awards
-const awardsSchema = Joi.array().items(
+const awardsSchema = 
   Joi.object({
-    name: Joi.string().min(3).max(100).required(),
-    date: Joi.string().required().pattern(/^(0[1-9]|1[0-2])\/\d{4}$/),
-    description: Joi.string().min(3).max(1000).required(),
+    name: Joi.string().min(3).max(100),
+    date: Joi.string().pattern(/^(0[1-9]|1[0-2])\/\d{4}$/),
+    description: Joi.string().min(3).max(1000),
   })
-);
+
+	const experienceValidationSchema = Joi.object({
+		working: Joi.string(),
+		company: Joi.string(),
+		position: Joi.string().required(),
+		duration: Joi.string().pattern(/^[0-9]{4} - [0-9]{4}$/),
+	});
+
+
+	const projectSchema = Joi.object({
+		name: Joi.string().min(3).max(100).required(),
+		entity: Joi.string().min(3).max(100).required(),
+		duration: Joi.string().required().pattern(/^(0[1-9]|1[0-2])\/\d{4} - (0[1-9]|1[0-2])\/\d{4}$/),
+		about: Joi.string().min(3).max(1000).required(),
+		role: Joi.string().min(3).max(100).required(),
+		technologiesUsed: Joi.array().items(Joi.string().required()).required(),
+		url: Joi.string().allow('').optional(), // Optional field, allow empty string or absent
+	});
 
 // Define the schema for interests
 const interestsSchema = Joi.array().items(Joi.string().required());
@@ -124,12 +141,22 @@ const updateUserValidator = Joi.object({
   college: collegeSchema,
   address: addressSchema,
   about: aboutSchema,
-  education: Joi.array().items(educationDetailsSchema).required(),
+  education: Joi.array().items(educationDetailsSchema),
   skills: skillsSchema,
-  awards: awardsSchema,
+  awards: Joi.array().items(awardsSchema),
   interests: interestsSchema,
+	projets: Joi.array().items(projectSchema),
+	experience: Joi.array().items(experienceValidationSchema),
 });
+
+ValidateAwareds = Joi.object({
+	awards:awardsSchema,
+})
 
 module.exports = {
   updateUserValidator,
+	awardsSchema,
+	educationDetailsSchema,
+	projectSchema,
+	experienceValidationSchema
 };
