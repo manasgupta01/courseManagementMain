@@ -1,4 +1,8 @@
 .env
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0d7531bcfdf2e093ef79cd4b487f1f04d2750660
 ### Node ###
 # Logs
 logs
@@ -8,6 +12,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
