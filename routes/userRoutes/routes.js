@@ -214,7 +214,7 @@ router.put("/awards/:id", async (req, res) => {
 // update education
 router.put("/education/:id", async (req, res) => {
   const educationId = req.params.id;
-  const { institution, degree, duration, location, gpa, fieldOfStudy } = req.body;
+  const { institution, degree, duration, location, grade, department } = req.body;
 //	const { error } = educationDetailsSchema.validate(userData);
 const validationResult = educationDetailsSchema.validate(req.body);
   if (validationResult.error) {
@@ -230,8 +230,8 @@ const validationResult = educationDetailsSchema.validate(req.body);
           "education.$[edu].degree": degree,
           "education.$[edu].duration": duration,
           "education.$[edu].location": location,
-          "education.$[edu].gpa": gpa,
-          "education.$[edu].fieldOfStudy": fieldOfStudy,
+          "education.$[edu].grade": grade,
+          "education.$[edu].fieldOfStudy": department,
         },
       },
       {

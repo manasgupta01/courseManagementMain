@@ -42,7 +42,7 @@ const educationSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  fieldOfStudy: { // department, dropdown, compile a list of all such departments, foreign key
+  department: { // department, dropdown, compile a list of all such departments, foreign key
     type: String,
     required: true,
     minLength: 3,

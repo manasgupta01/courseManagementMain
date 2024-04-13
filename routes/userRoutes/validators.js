@@ -94,10 +94,26 @@ const aboutSchema = Joi.string()
 const educationDetailsSchema = Joi.object({
   institution: Joi.string().min(3).max(100).required(),
   degree: Joi.string().min(3).max(100),
-  duration: Joi.string().pattern(/^[0-9]{4} - [0-9]{4}$/),
+	duration: Joi.string()
+	.pattern(/^[0-9]{4}-[0-9]{4}$/)
+	.custom((value, helpers) => {
+		const [startYear, endYear] = value.split('-').map(Number);
+		const currentYear = new Date().getFullYear();
+
+		if (startYear < 1947 || startYear > currentYear + 5) {
+			return helpers.error('any.invalid');
+		}
+
+		if (endYear < startYear || endYear > currentYear + 5) {
+			return helpers.error('any.invalid');
+		}
+
+		return value;
+	}, 'Custom validation for duration')
+	.required(),
   location: Joi.string().min(3).max(100),
-  gpa: Joi.number().min(0).max(10),
-  fieldOfStudy: Joi.string().min(3).max(100),
+  grade: Joi.number().min(0).max(10),
+  department: Joi.string().min(3).max(100),
 });
 
 // Define the schema for skills
