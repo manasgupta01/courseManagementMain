@@ -631,25 +631,45 @@
         }
 
         function aggregateDataByService(incidents) {
-            const serviceCounts = {};
+    const serviceData = {};
 
-            incidents.forEach(incident => {
-                const serviceName = incident.service.summary; // Assuming 'service' is an object with a 'summary' property
-                const serviceId = incident.service.id; // Assuming 'service' has an 'id' property
+    incidents.forEach(incident => {
+        const serviceName = incident.service.summary; // Assuming 'service' is an object with a 'summary' property
+        const serviceId = incident.service.id; // Assuming 'service' has an 'id' property
 
-                if (!serviceCounts[serviceName]) {
-                    serviceCounts[serviceName] = { count: 0, id: serviceId };
-                }
-                serviceCounts[serviceName].count++;
-            });
-
-            // Convert to an array, sort by count, and return
-            return Object.keys(serviceCounts).map(key => ({
-                name: key,
-                id: serviceCounts[key].id,
-                count: serviceCounts[key].count
-            })).sort((a, b) => b.count - a.count); // Sort by count in descending order
+        if (!serviceData[serviceName]) {
+            serviceData[serviceName] = { count: 0, id: serviceId, totalMTTR: 0, resolvedCount: 0 };
         }
+
+        serviceData[serviceName].count++;
+
+        if (incident.status === 'resolved' && incident.resolved_at) {
+            const createdAt = new Date(incident.created_at);
+            const resolvedAt = new Date(incident.resolved_at);
+            const mttr = resolvedAt - createdAt;
+
+            serviceData[serviceName].totalMTTR += mttr;
+            serviceData[serviceName].resolvedCount++;
+        }
+    });
+
+    // Convert to an array, calculate average MTTR, sort by count, and return
+    return Object.keys(serviceData).map(key => {
+        const service = serviceData[key];
+        const averageMTTRMillis = service.resolvedCount > 0 ? service.totalMTTR / service.resolvedCount : 0;
+        const hours = Math.floor(averageMTTRMillis / (1000 * 60 * 60));
+        const minutes = Math.floor((averageMTTRMillis % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((averageMTTRMillis % (1000 * 60)) / 1000);
+
+        return {
+            name: key,
+            id: service.id,
+            count: service.count,
+            averageMTTR: `${hours}h ${minutes}m ${seconds}s`
+        };
+    }).sort((a, b) => b.count - a.count); // Sort by count in descending order
+}
+
 
         function aggregateDataByEscalationPolicy(incidents) {
             const escalationPolicyCounts = {};
@@ -681,11 +701,19 @@
             tbody.empty();
 
             pageServices.forEach(service => {
-                tbody.append(`<tr><td>${service.name}</td><td>${service.id}</td><td>${service.count}</td></tr>`);
+                tbody.append(`
+            <tr>
+                <td>${service.name}</td>
+                <td>${service.id}</td>
+                <td>${service.count}</td>
+                <td>${service.averageMTTR}</td>
+            </tr>
+        `);
             });
 
             setupPagination(services.length, itemsPerPage, pageNumber, 'service');
         }
+
 
         function updateEscalationPolicyTable(escalationPolicies, pageNumber, itemsPerPage) {
             const startIndex = (pageNumber - 1) * itemsPerPage;
@@ -848,7 +876,6 @@
             setupPagination(incidents.length, itemsPerPage, pageNumber, 'incidents');
             updateInfoPanel(incidents);
             sortedServices = aggregateDataByService(incidents);  // Store sorted services
-            console.log(sortedServices);
             updateServiceTable(sortedServices, 1, 10);  // Display the first page
             sortedEscalationPolicies = aggregateDataByEscalationPolicy(incidents);  // Store sorted escalation policies
             updateEscalationPolicyTable(sortedEscalationPolicies, 1, 10);  // Display the first page
@@ -939,7 +966,7 @@
                 }
             });
 
-            
+
 
             $('#incident-count').text(incidents.length);
             $('#high-urgency-count').text(urgencyCounts.high);
