@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PagerDuty Escalation Policies</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            /* Aligns content to the left */
+            width: 100%;
+        }
+
+        .form-row {
+            display: flex;
+            width: 100%;
+            /* Takes full width of the body */
+            padding: 0 20px;
+            /* Adds padding on the sides */
+            box-sizing: border-box;
+            /* Includes padding in width calculation */
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-right: 20px;
+            /* Space between form groups */
+            flex: 1;
+            /* Each form group takes equal width */
+        }
+
+        .form-group:last-child {
+            margin-right: 0;
+            /* Removes margin from the last form group */
+        }
+
+        .pagination-btn {
+            cursor: pointer;
+            margin: 0 5px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .pagination-btn:hover {
+            background-color: #e9ecef;
+        }
+
+        .active-page {
+            border: 2px solid #007bff;
+            /* Blue border for active page */
+            background-color: #e9ecef;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .pagination-div {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .select2-container {
+            width: 100% !important;
+            /* Ensures select2 takes full width of its parent */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            /* Adds space above the table */
+            padding: 0;
+            /* Removes padding to allow table to stretch fully */
+            box-sizing: border-box;
+            /* Includes padding in width calculation */
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        th {
+            background-color: #F2F2F2;
+        }
+
+        .modal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            /* Stay in place */
+            z-index: 1;
+            /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            /* Full width */
+            height: 100%;
+            /* Full height */
+            overflow: auto;
+            /* Enable scroll if needed */
+            background-color: rgb(0, 0, 0);
+            /* Fallback color */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Black w/ opacity */
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            /* Could be more or less, depending on screen size */
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .highlight {
+            background-color: yellow;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>&nbsp PD Analytics</h2>
+    <div class="form-row">
+        <!-- <div class="form-group">
+            <label for="escalation_policies"><b>Escalation Policy</b></label>
+            <select id="escalation_policies" multiple="multiple">Select Escalation Policies...</select>
+        </div> -->
+        <div class="form-group">
+            <label for="services"><b>PD Service</b></label>
+            <select id="services">
+                <option value="" disabled selected>Select a service...</option>
+            </select>
+        </div>
+        <!-- <div class="form-group">
+            <label for="users"><b>PD user </b></label>
+            <select id="users" class="select2" data-placeholder="Select a user"></select>
+        </div> -->
+        <!-- <div class="form-group">
+            <label for="shift-dropdown"><b>Time Range</b></label>
+            <select id="shift-dropdown">
+                <option value="">Select Shift</option>
+                <option value="A">A Shift</option>
+                <option value="B">B Shift</option>
+                <option value="C">C Shift</option>
+                <option value="Day Weekend Oncall">Day Weekend OnCall</option>
+                <option value="Night Weekend Oncall">Night Weekend OnCall</option>
+                <option value="30 days A shift">30 Days A-Shift stats excluding weekends</option>
+                <option value="30 days B shift">30 Days B-Shift stats excluding weekends</option>
+                <option value="30 days C shift">30 Days C-Shift stats excluding weekends</option>
+            </select>
+        </div> -->
+        <div class="form-group">
+            <label for="date-picker"><b>Date</b></label>
+            <input type="date" id="date-picker">
+        </div>
+        <button id="fetch-incidents-btn">Fetch Incidents</button>
+    </div>
+    <div id="Loading-message" style="display:none;"><b>&nbsp Loading...</b></div>
+    <div class="info-panel" style="display: flex; justify-content: space-between; width: 100%; margin-top: 20px;">
+
+        <div class="info-container" style="flex: 1; text-align: center; border: 1px solid #ccc; padding: 20px;">
+            <div class="info-item" style="margin-bottom: 20px;">
+                <h4>NUMBER OF INCIDENTS</h4>
+                <p id="incident-count" style="font-size: 36px; margin: 0;">-</p>
+            </div>
+            <div class="info-item">
+                <h4>AVERAGE MTTR</h4>
+                <p id="average-mttr" style="font-size: 36px; margin: 0;">-</p>
+            </div>
+        </div>
+
+
+        <div class="info-item" style="flex: 1; text-align: center; border: 1px solid #ccc; padding: 20px;">
+            <h4>URGENCY OF INCIDENTS</h4>
+            <table id="urgency-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr>
+                    <th>Urgency</th>
+                    <th>Count</th>
+                </tr>
+                <!-- Placeholder rows -->
+                <tr>
+                    <td>High</td>
+                    <td id="high-urgency-count">-</td>
+                </tr>
+                <tr>
+                    <td>Low</td>
+                    <td id="low-urgency-count">-</td>
+                </tr>
+            </table>
+        </div>
+        <div class="info-item" style="flex: 1; text-align: center; border: 1px solid #ccc; padding: 20px;">
+            <h4>STATUS OF INCIDENTS</h4>
+            <table id="status-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr>
+                    <th>Status</th>
+                    <th>Count</th>
+                </tr>
+                <!-- Placeholder rows -->
+                <tr>
+                    <td>Acknowledged</td>
+                    <td id="acknowledged-count">-</td>
+                </tr>
+                <tr>
+                    <td>Resolved</td>
+                    <td id="resolved-count">-</td>
+                </tr>
+                <tr>
+                    <td>Triggered</td>
+                    <td id="triggered-count">-</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <h2>&nbsp INCIDENTS PER PAGERDUTY SERVICE</h2>
+    <div class="service-panel" style="margin-top: 20px; width: 100%;">
+        <table id="service-incidents" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>PD Service</th>
+                    <th>PD ID</th>
+                    <th>Incident Count</th>
+                    <th>MTTR</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data rows will be inserted here -->
+            </tbody>
+        </table>
+        <div id="pagination-service" style="text-align: center; margin-top: 10px;">
+            <!-- Pagination buttons will be inserted here -->
+        </div>
+    </div>
+    <h2>&nbsp INCIDENTS PER ESCALATION POLICY</h2>
+    <div class="escalation-policy-panel" style="margin-top: 20px; width: 100%;">
+        <table id="escalation-policy-incidents" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>Escalation Policy</th>
+                    <th>PD ID</th>
+                    <th>Incident Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data rows will be inserted here -->
+            </tbody>
+        </table>
+        <div id="pagination-escalation-policy" style="text-align: center; margin-top: 10px;">
+            <!-- Pagination buttons will be inserted here -->
+        </div>
+    </div>
+    <h2>&nbsp Incidents</h2>
+    <div class="service-panel" style="margin-top: 20px; width: 100%;">
+        <table id="incidents">
+            <tr>
+                <th>S.No</th>
+                <th>Incident Number</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Urgency</th>
+                <th>Service ID</th>
+                <th>Assignee</th>
+                <th>Escalation Policy</th>
+                <th>Created At</th>
+                <th>Resolved Time</th>
+                <th>MTTR</th>
+            </tr>
+        </table>
+        <div id="pagination-incidents" style="text-align: center; margin-top: 10px;">
+            <!-- Pagination buttons will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Modal for Incident Timeline -->
+    <div id="incidentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Incident Timeline</h2>
+            <div id="timeline-content"></div>
+        </div>
+    </div>
+    14:27
+    <script>
+        const TOKEN = 'u+h9x6nsf1oB_zV12hAw'; // Use your actual API token
+        const servicesDropdown = $('#services');
+        const usersDropdown = $('#users');
+        let allIncidents = [];  // This will hold all incidents
+        let sortedServices = [];  // This will hold the sorted services array
+        let sortedEscalationPolicies = [];  // This will hold the sorted escalation policies array
+        let selectedEscalationPolicies = []; // This will hold the selected escalation policies
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchEscalationPolicies();
+            document.getElementById('fetch-incidents-btn').addEventListener('click', async function () {
+                // const shift = document.getElementById('shift-dropdown').value;
+                const date = document.getElementById('date-picker').value;
+                if (!date) {
+                    alert('Please select date.');
+                    return;
+                }
+                showLoadingIndicator();
+                await fetchIncidents(date);
+                hideLoadingIndicator();
+            });
+
+            // Get the modal
+            const modal = document.getElementById("incidentModal");
+
+            // Get the <span> element that closes the modal
+            const span = document.getElementsByClassName("close")[0];
+
+            // When the user clicks on <span> (x), close the modal
+            span.onclick = function () {
+                modal.style.display = "none";
+            }
+
+            // When the user clicks anywhere outside of the modal, close it
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        });
+
+        function showLoadingIndicator() {
+            document.getElementById('Loading-message').style.display = 'block';
+        }
+
+        function hideLoadingIndicator() {
+            document.getElementById('Loading-message').style.display = 'none';
+        }
+
+        async function fetchEscalationPolicies(offset = 0) {
+            try {
+                const response = await fetch(`https://api.pagerduty.com/escalation_policies?limit=100&offset=${offset}&date_range=all`, {
+                    headers: {
+                        'Authorization': `Token token=${TOKEN}`,
+                        'Accept': 'application/vnd.pagerduty+json'
+                    }
+                });
+                const data = await response.json();
+                const escalationPoliciesDropdown = document.getElementById('escalation_policies');
+                data.escalation_policies.forEach(policy => {
+                    const option = new Option(policy.summary, policy.id);
+                    escalationPoliciesDropdown.appendChild(option);
+                });
+                if (data.more) {
+                    await fetchEscalationPolicies(offset + data.limit);
+                } else {
+                    $(escalationPoliciesDropdown).select2({
+                        placeholder: 'Type escalation policy name...',
+                        allowClear: true,
+                        matcher: function (params, option) {
+                            if ($.trim(params.term) === '') {
+                                return option;
+                            }
+                            if (option.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                                return option;
+                            }
+                            return null;
+                        }
+                    });
+                    $(escalationPoliciesDropdown).val(null).trigger('change');
+                }
+            } catch (error) {
+                console.error('Error fetching escalation policies:', error);
+            }
+        }
+
+        async function fetchServices(offset = 0) {
+            try {
+                const response = await fetch(`https://api.pagerduty.com/services?limit=100&offset=${offset}`, {
+                    headers: {
+                        'Authorization': `Token token=${TOKEN}`,
+                        'Accept': 'application/vnd.pagerduty+json'
+                    }
+                });
+                const data = await response.json();
+                data.services.forEach(service => {
+                    const option = new Option(service.name, service.id);
+                    servicesDropdown.append(option);
+                });
+                if (data.more) {
+                    await fetchServices(offset + data.limit);
+                } else {
+                    initializeSelect2(servicesDropdown, 'Select a service...');
+                }
+            } catch (error) {
+                console.error('Error fetching services:', error);
+            }
+        }
+
+        async function fetchUsers(offset = 0) {
+            try {
+                const response = await fetch(`https://api.pagerduty.com/users?limit=100&offset=${offset}`, {
+                    headers: {
+                        'Authorization': `Token token=${TOKEN}`,
+                        'Accept': 'application/vnd.pagerduty+json'
+                    }
+                });
+                const data = await response.json();
+                const placeholderOption = new Option('Select a user', '', true, true);
+                usersDropdown.append(placeholderOption);
+                data.users.forEach(user => {
+                    const option = new Option(user.name, user.id);
+                    usersDropdown.append(option);
+                });
+                if (data.more) {
+                    await fetchUsers(offset + data.limit);
+                } else {
+                    initializeSelect2(usersDropdown, 'Select a user');
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+
+        function initializeSelect2(dropdown, placeholder) {
+            dropdown.select2({
+                placeholder: placeholder,
+                allowClear: true,
+                matcher: function (params, option) {
+                    if ($.trim(params.term) === '') {
+                        return option;
+                    }
+                    if (option.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                        return option;
+                    }
+                    return null;
+                }
+            });
+        }
+
+        fetchServices();
+        fetchUsers();
+
+        // Add event listeners for dropdown changes
+        servicesDropdown.on('select2:select', function (e) {
+            usersDropdown.val(null).trigger('change');
+            fetchIncidentsByService(e.params.data.id);
+        });
+
+        usersDropdown.on('select2:select', function (e) {
+            servicesDropdown.val(null).trigger('change');
+            fetchIncidentsByUser(e.params.data.id);
+        });
+
+
+        async function fetchIncidents(date) {
+            const baseDate = new Date(date);
+            const since = new Date(baseDate.setHours(0, 0, 0)); // Start of the day (00:00:00)
+            const until = new Date(baseDate.setHours(23, 59, 59)); // End of the day (23:59:59)
+
+            try {
+                let incidents = [];
+                let offset = 0;
+                while (true) {
+                    const response = await fetch(`https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&since=${since.toISOString()}&until=${until.toISOString()}&limit=100&offset=${offset}`, {
+                        headers: {
+                            'Authorization': `Token token=${TOKEN}`,
+                            'Accept': 'application/vnd.pagerduty+json'
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.incidents.length === 0) {
+                        break;
+                    }
+                    incidents = incidents.concat(data.incidents);
+                    offset += data.limit;
+                }
+                allIncidents = incidents; // Store all incidents for later filtering
+                // console.log(incidents);
+                updateIncidentsTable(incidents, 1, 10, selectedEscalationPolicies);
+            } catch (error) {
+                console.error('Error fetching incidents:', error);
+            }
+        }
+
+        //  async function fetchIncidents(date) {
+        //             const baseDate = new Date(date);
+        //             let since, until;
+
+        //             switch (shift) {
+        //                 case 'A':
+        //                     since = new Date(baseDate.setHours(6, 30, 1)); // 6:30 AM
+        //                     until = new Date(baseDate.setHours(14, 0, 0)); // 2:00 PM
+        //                     break;
+        //                 case 'B':
+        //                     since = new Date(baseDate.setHours(14, 0, 1)); // 2:00 PM
+        //                     until = new Date(baseDate.setHours(21, 0, 0)); // 9:00 PM
+        //                     break;
+        //                 case 'C':
+        //                     since = new Date(baseDate.setHours(21, 0, 1));
+        //                     baseDate.setDate(baseDate.getDate() + 1);
+        //                     until = new Date(baseDate);
+        //                     until.setHours(6, 30, 0);
+        //                     break;
+        //                 case 'Day Weekend Oncall':
+        //                     since = new Date(baseDate.setHours(6, 30, 1));  // 06:30 AM
+        //                     until = new Date(baseDate.setHours(20, 0, 0)); // 8:00 PM
+        //                     break;
+        //                 case 'Night Weekend Oncall':
+        //                     since = new Date(baseDate.setHours(20, 0, 1));
+        //                     baseDate.setDate(baseDate.getDate() + 1);
+        //                     until = new Date(baseDate);
+        //                     until.setHours(6, 30, 0);
+        //                     break;
+        //                 case '30 days A shift':
+        //                 case '30 days B shift':
+        //                 case '30 days C shift':
+        //                     const incidents = [];
+        //                     let daysCounted = 0;
+        //                     const shiftHours = {
+        //                         '30 days A shift': { start: [6, 30, 1], end: [14, 0, 0] },
+        //                         '30 days B shift': { start: [14, 0, 1], end: [21,                         , 0, 0] },
+        //                         '30 days C shift': { start: [21, 0, 1], end: [6, 30, 0] }
+        //                     };
+        //                     for (let i = 0; daysCounted < 30; i++) {
+        //                         const daySince = new Date(baseDate);
+        //                         daySince.setDate(baseDate.getDate() - i);
+        //                         const dayOfWeek = daySince.getDay();
+        //                         if (dayOfWeek === 0 || dayOfWeek === 6) {
+        //                             continue; // Skip Saturday and Sunday
+        //                         }
+        //                         daySince.setHours(...shiftHours[shift].start);
+
+        //                         const dayUntil = new Date(baseDate);
+        //                         dayUntil.setDate(baseDate.getDate() - i);
+        //                         if (shift === '30 days C shift') {
+        //                             dayUntil.setDate(dayUntil.getDate() + 1);
+        //                         }
+        //                         dayUntil.setHours(...shiftHours[shift].end);
+
+        //                         const dayIncidents = await fetchIncidentsForShift(daySince.toISOString(), dayUntil.toISOString());
+        //                         incidents.push(...dayIncidents);
+        //                         daysCounted++;
+        //                     }
+        //                     allIncidents = incidents; // Store all incidents for later filtering
+        //                     updateIncidentsTable(incidents, 1, 10, selectedEscalationPolicies);
+        //                     return;
+        //             }
+
+        //             since = since.toISOString();
+        //             until = until.toISOString();
+
+        //             try {
+        //                 let incidents = [];
+        //                 let offset = 0;
+        //                 while (true) {
+        //                     const response = await fetch(`https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&since=${since}&until=${until}&limit=100&offset=${offset}`, {
+        //                         headers: {
+        //                             'Authorization': `Token token=${TOKEN}`,
+        //                             'Accept': 'application/vnd.pagerduty+json'
+        //                         }
+        //                     });
+        //                     const data = await response.json();
+        //                     if (data.incidents.length === 0) {
+        //                         break;
+        //                     }
+        //                     incidents = incidents.concat(data.incidents);
+        //                     offset += data.limit;
+        //                 }
+        //                 allIncidents = incidents; // Store all incidents for later filtering
+        //                 updateIncidentsTable(incidents, 1, 10, selectedEscalationPolicies);
+        //             } catch (error) {
+        //                 console.error('Error fetching incidents:', error);
+        //             }
+        //         }
+
+        async function fetchIncidentsForShift(since, until) {
+            try {
+                let incidents = [];
+                let offset = 0;
+                while (true) {
+                    const response = await fetch(`https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&since=${since}&until=${until}&limit=100&offset=${offset}`, {
+                        headers: {
+                            'Authorization': `Token token=${TOKEN}`,
+                            'Accept': 'application/vnd.pagerduty+json'
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.incidents.length === 0) {
+                        break;
+                    }
+                    incidents = incidents.concat(data.incidents);
+                    offset += data.limit;
+                }
+                return incidents;
+            } catch (error) {
+                console.error('Error fetching incidents:', error);
+                return [];
+            }
+        }
+
+        function fetchIncidentsByEscalationPolicy() {
+            selectedEscalationPolicies = $('#escalation_policies').val();
+            if (selectedEscalationPolicies && selectedEscalationPolicies.length > 0) {
+                const selectedIncidents = allIncidents.filter(incident => selectedEscalationPolicies.includes(incident.escalation_policy.id));
+                updateIncidentsTable(selectedIncidents, 1, 10, selectedEscalationPolicies);
+            } else {
+                // Show all incidents if no escalation policies are selected
+                updateIncidentsTable(allIncidents, 1, 10, selectedEscalationPolicies);
+            }
+        }
+
+        function aggregateDataByService(incidents) {
+            const serviceCounts = {};
+
+            incidents.forEach(incident => {
+                const serviceName = incident.service.summary; // Assuming 'service' is an object with a 'summary' property
+                const serviceId = incident.service.id; // Assuming 'service' has an 'id' property
+
+                if (!serviceCounts[serviceName]) {
+                    serviceCounts[serviceName] = { count: 0, id: serviceId };
+                }
+                serviceCounts[serviceName].count++;
+            });
+
+            // Convert to an array, sort by count, and return
+            return Object.keys(serviceCounts).map(key => ({
+                name: key,
+                id: serviceCounts[key].id,
+                count: serviceCounts[key].count
+            })).sort((a, b) => b.count - a.count); // Sort by count in descending order
+        }
+
+        function aggregateDataByEscalationPolicy(incidents) {
+            const escalationPolicyCounts = {};
+
+            incidents.forEach(incident => {
+                const escalationPolicyName = incident.escalation_policy.summary; // Assuming 'escalation_policy' is an object with a 'summary' property
+                const escalationPolicyId = incident.escalation_policy.id; // Assuming 'escalation_policy' has an 'id' property
+
+                if (!escalationPolicyCounts[escalationPolicyName]) {
+                    escalationPolicyCounts[escalationPolicyName] = { count: 0, id: escalationPolicyId };
+                }
+                escalationPolicyCounts[escalationPolicyName].count++;
+            });
+
+            // Convert to an array, sort by count, and return
+            return Object.keys(escalationPolicyCounts).map(key => ({
+                name: key,
+                id: escalationPolicyCounts[key].id,
+                count: escalationPolicyCounts[key].count
+            })).sort((a, b) => b.count - a.count); // Sort by count in descending order
+        }
+
+        function updateServiceTable(services, pageNumber, itemsPerPage) {
+            const startIndex = (pageNumber - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageServices = services.slice(startIndex, endIndex);
+
+            const tbody = $('#service-incidents tbody');
+            tbody.empty();
+
+            pageServices.forEach(service => {
+                tbody.append(`<tr><td>${service.name}</td><td>${service.id}</td><td>${service.count}</td></tr>`);
+            });
+
+            setupPagination(services.length, itemsPerPage, pageNumber, 'service');
+        }
+
+        function updateEscalationPolicyTable(escalationPolicies, pageNumber, itemsPerPage) {
+            const startIndex = (pageNumber - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageEscalationPolicies = escalationPolicies.slice(startIndex, endIndex);
+
+            const tbody = $('#escalation-policy-incidents tbody');
+            tbody.empty();
+
+            pageEscalationPolicies.forEach(policy => {
+                tbody.append(`<tr><td>${policy.name}</td><td>${policy.id}</td><td>${policy.count}</td></tr>`);
+            });
+
+            setupPagination(escalationPolicies.length, itemsPerPage, pageNumber, 'escalation-policy');
+        }
+
+        function setupPagination(totalItems, itemsPerPage, currentPage, type) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const paginationDiv = type === 'service' ? $('#pagination-service') : (type === 'escalation-policy' ? $('#pagination-escalation-policy') : $('#pagination-incidents'));
+            paginationDiv.empty();
+
+            // Add "Prev" button
+            const prevButton = $('<button class="pagination-btn">«Prev</button>');
+            prevButton.on('click', function () {
+                if (currentPage > 1) {
+                    if (type === 'service') {
+                        updateServiceTable(sortedServices, currentPage - 1, itemsPerPage);
+                    } else if (type === 'escalation-policy') {
+                        updateEscalationPolicyTable(sortedEscalationPolicies, currentPage - 1, itemsPerPage);
+                    } else {
+                        updateIncidentsTable(allIncidents, currentPage - 1, itemsPerPage, selectedEscalationPolicies);
+                    }
+                }
+            });
+            paginationDiv.append(prevButton);
+
+            // Calculate the range of pages to display
+            const maxVisiblePages = 10;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            // Adjust startPage if endPage is less than maxVisiblePages
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const button = $(`<button class="pagination-btn">${i}</button>`);
+                button.on('click', function () {
+                    if (type === 'service') {
+                        updateServiceTable(sortedServices, i, itemsPerPage);
+                    } else if (type === 'escalation-policy') {
+                        updateEscalationPolicyTable(sortedEscalationPolicies, i, itemsPerPage);
+                    } else {
+                        updateIncidentsTable(allIncidents, i, itemsPerPage, selectedEscalationPolicies);
+                    }
+                    $('.pagination-btn').removeClass('active-page'); // Remove active class from all buttons
+                    $(this).addClass('active-page'); // Add active class to the clicked button
+                });
+                paginationDiv.append(button);
+                if (i === currentPage) {
+                    button.addClass('active-page');
+                }
+            }
+
+            // Add "Next" button
+            const nextButton = $('<button class="pagination-btn">Next»</button>');
+            nextButton.on('click', function () {
+                if (currentPage < totalPages) {
+                    if (type === 'service') {
+                        updateServiceTable(sortedServices, currentPage + 1, itemsPerPage);
+                    } else if (type === 'escalation-policy') {
+                        updateEscalationPolicyTable(sortedEscalationPolicies, currentPage + 1, itemsPerPage);
+                    } else {
+                        updateIncidentsTable(allIncidents, currentPage + 1, itemsPerPage, selectedEscalationPolicies);
+                    }
+                }
+            });
+            paginationDiv.append(nextButton);
+        }
+
+        function updateIncidentsTable(incidents, pageNumber = 1, itemsPerPage = 10, selectedEscalationPolicies = []) {
+            const startIndex = (pageNumber - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            let pageIncidents = incidents.slice(startIndex, endIndex);
+
+            if (selectedEscalationPolicies.length > 0) {
+                pageIncidents = pageIncidents.filter(incident => selectedEscalationPolicies.includes(incident.escalation_policy.id));
+            }
+
+            const incidentsTable = $('#incidents');
+            incidentsTable.empty();
+            incidentsTable.append('<tr><th>S.No</th><th>Incident Number</th><th>Title</th><th>Status</th><th>Urgency</th><th>Service ID</th><th>Assignee</th><th>Escalation Policy</th><th>Created At (Local Time)</th><th>Resolved At (Local Time)</th><th>MTTR</th></tr>');
+
+            if (pageIncidents.length === 0) {
+                incidentsTable.append('<tr><td colspan="11">No incidents found</td></tr>');
+            } else {
+                pageIncidents.forEach((incident, index) => {
+                    const row = $('<tr></tr>');
+                    row.append(`<td><a href="#" class="incident-link" data-incident-id="${incident.id}">${startIndex + index + 1}</a></td>`);
+
+                    ['incident_number', 'title', 'status', 'urgency', 'service', 'assignments', 'escalation_policy', 'created_at', 'resolved_at'].forEach(key => {
+                        const cell = $('<td></td>');
+                        if (key === 'service') {
+                            cell.text(incident[key].id);
+                        } else if (key === 'escalation_policy') {
+                            cell.text(incident[key].summary);
+                        } else if (key === 'assignments' && incident[key].length > 0) {
+                            cell.text(incident[key][0].assignee.summary);
+                        } else if (key === 'created_at') {
+                            const localTime = new Date(incident[key]).toLocaleString();
+                            cell.text(localTime);
+                        } else if (key === 'resolved_at') {
+                            const localTime = new Date(incident[key]).toLocaleString();
+                            cell.text(localTime);
+                        } else {
+                            cell.text(incident[key]);
+                        }
+                        row.append(cell);
+                    });
+
+                    // Calculate MTTR
+                    const mttrCell = $('<td></td>');
+                    if (incident.resolved_at) {
+                        const createdAt = new Date(incident.created_at);
+                        const resolvedAt = new Date(incident.resolved_at);
+                        const duration = resolvedAt - createdAt;
+
+                        const hours = Math.floor(duration / (1000 * 60 * 60));
+                        const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+
+                        mttrCell.text(`${hours}h ${minutes}m ${seconds}s`);
+                    } else {
+                        mttrCell.text('N/A');
+                    }
+                    row.append(mttrCell);
+
+                    incidentsTable.append(row);
+                });
+
+                // Add event listeners for incident links
+                $('.incident-link').on('click', function (event) {
+                    event.preventDefault();
+                    const incidentId = $(this).data('incident-id');
+                    fetchIncidentTimeline(incidentId);
+                });
+
+                // Add hover effect for incident links
+                $('.incident-link').hover(
+                    function () {
+                        $(this).addClass('highlight');
+                    },
+                    function () {
+                        $(this).removeClass('highlight');
+                    }
+                );
+            }
+
+            setupPagination(incidents.length, itemsPerPage, pageNumber, 'incidents');
+            updateInfoPanel(incidents);
+            sortedServices = aggregateDataByService(incidents);  // Store sorted services
+            console.log(sortedServices);
+            updateServiceTable(sortedServices, 1, 10);  // Display the first page
+            sortedEscalationPolicies = aggregateDataByEscalationPolicy(incidents);  // Store sorted escalation policies
+            updateEscalationPolicyTable(sortedEscalationPolicies, 1, 10);  // Display the first page
+        }
+
+
+        function setupPagination(totalItems, itemsPerPage, currentPage, type) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const paginationDiv = type === 'service' ? $('#pagination-service') : (type === 'escalation-policy' ? $('#pagination-escalation-policy') : $('#pagination-incidents'));
+            paginationDiv.empty();
+
+            // Add "Prev" button
+            const prevButton = $('<button class="pagination-btn">«Prev</button>');
+            prevButton.on('click', function () {
+                if (currentPage > 1) {
+                    if (type === 'service') {
+                        updateServiceTable(sortedServices, currentPage - 1, itemsPerPage);
+                    } else if (type === 'escalation-policy') {
+                        updateEscalationPolicyTable(sortedEscalationPolicies, currentPage - 1, itemsPerPage);
+                    } else {
+                        updateIncidentsTable(allIncidents, currentPage - 1, itemsPerPage, selectedEscalationPolicies);
+                    }
+                }
+            });
+            paginationDiv.append(prevButton);
+
+            // Calculate the range of pages to display
+            const maxVisiblePages = 10;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            // Adjust startPage if endPage is less than maxVisiblePages
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const button = $(`<button class="pagination-btn">${i}</button>`);
+                button.on('click', function () {
+                    if (type === 'service') {
+                        updateServiceTable(sortedServices, i, itemsPerPage);
+                    } else if (type === 'escalation-policy') {
+                        updateEscalationPolicyTable(sortedEscalationPolicies, i, itemsPerPage);
+                    } else {
+                        updateIncidentsTable(allIncidents, i, itemsPerPage, selectedEscalationPolicies);
+                    }
+                    $('.pagination-btn').removeClass('active-page'); // Remove active class from all buttons
+                    $(this).addClass('active-page'); // Add active class to the clicked button
+                });
+                paginationDiv.append(button);
+                if (i === currentPage) {
+                    button.addClass('active-page');
+                }
+            }
+
+            // Add "Next" button
+            const nextButton = $('<button class="pagination-btn">Next»</button>');
+            nextButton.on('click', function () {
+                if (currentPage < totalPages) {
+                    if (type === 'service') {
+                        updateServiceTable(sortedServices, currentPage + 1, itemsPerPage);
+                    } else if (type === 'escalation-policy') {
+                        updateEscalationPolicyTable(sortedEscalationPolicies, currentPage + 1, itemsPerPage);
+                    } else {
+                        updateIncidentsTable(allIncidents, currentPage + 1, itemsPerPage, selectedEscalationPolicies);
+                    }
+                }
+            });
+            paginationDiv.append(nextButton);
+        }
+        function updateInfoPanel(incidents) {
+            const statusCounts = { triggered: 0, resolved: 0, acknowledged: 0 };
+            const urgencyCounts = { high: 0, low: 0, medium: 0 };
+
+            let totalMTTR = 0;
+            let resolvedCount = 0;
+
+            incidents.forEach(incident => {
+                statusCounts[incident.status] = (statusCounts[incident.status] || 0) + 1;
+                urgencyCounts[incident.urgency] = (urgencyCounts[incident.urgency] || 0) + 1;
+
+                if (incident.status === 'resolved' && incident.resolved_at) {
+                    const createdAt = new Date(incident.created_at);
+                    const resolvedAt = new Date(incident.resolved_at);
+                    const mttr = resolvedAt - createdAt;
+                    totalMTTR += mttr;
+                    resolvedCount++;
+                }
+            });
+
+            
+
+            $('#incident-count').text(incidents.length);
+            $('#high-urgency-count').text(urgencyCounts.high);
+            $('#low-urgency-count').text(urgencyCounts.low);
+            $('#acknowledged-count').text(statusCounts.acknowledged);
+            $('#resolved-count').text(statusCounts.resolved);
+            $('#triggered-count').text(statusCounts.triggered);
+
+            // Calculate and display average MTTR
+            let averageMTTR = '-';
+            if (resolvedCount > 0) {
+                const averageMTTRMillis = totalMTTR / resolvedCount;
+                const hours = Math.floor(averageMTTRMillis / (1000 * 60 * 60));
+                const minutes = Math.floor((averageMTTRMillis % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((averageMTTRMillis % (1000 * 60)) / 1000);
+                averageMTTR = `${hours}h ${minutes}m ${seconds}s`;
+            }
+            $('#average-mttr').text(averageMTTR);
+        }
+
+
+        async function fetchIncidentTimeline(incidentId) {
+            try {
+                const response = await fetch(`https://api.pagerduty.com/incidents/${incidentId}/log_entries`, {
+                    headers: {
+                        'Authorization': `Token token=${TOKEN}`,
+                        'Accept': 'application/vnd.pagerduty+json'
+                    }
+                });
+                const data = await response.json();
+                const timelineContent = $('#timeline-content');
+                timelineContent.empty();
+
+                // Format the date to the user's local time zone
+                const formatter = new Intl.DateTimeFormat(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    timeZoneName: 'short'
+                });
+
+                data.log_entries.forEach(entry => {
+                    const localTime = formatter.format(new Date(entry.created_at));
+                    const entryElement = $('<div></div>').text(`${localTime}: ${entry.summary}`);
+                    timelineContent.append(entryElement);
+                });
+
+                $('#incidentModal').show();
+            } catch (error) {
+                console.error('Error fetching incident timeline:', error);
+            }
+        }
+
+        // Add event listener for escalation policy selection
+        $('#escalation_policies').on('select2:select select2:unselect', fetchIncidentsByEscalationPolicy);
+    </script>
+</body>
+
+</html>
