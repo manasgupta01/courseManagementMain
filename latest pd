@@ -449,114 +449,129 @@
 
 
         async function fetchIncidentsForMultipleServices(serviceIds) {
-            // Get start and end dates from input fields
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
+    // Get start and end dates from input fields
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
 
-            if (!startDate || !endDate) {
-                alert('Please select both start and end dates.');
-                return;
-            }
+    // Ensure both dates are selected
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates.');
+        return;
+    }
 
-            if (new Date(startDate) > new Date(endDate)) {
-                alert('Start date cannot be later than end date.');
-                return;
-            }
+    // Parse dates
+    const since = new Date(startDate);
+    const until = new Date(endDate);
 
-            showLoadingIndicator();
+    // Ensure start date is not later than end date
+    if (since > until) {
+        alert('Start date cannot be later than end date.');
+        return;
+    }
 
-            try {
-                let incidents = [];
-                let offset = 0;
+    // Adjust times to cover the entire start and end days
+    since.setHours(0, 0, 0, 0);
+    until.setHours(23, 59, 59, 999);
 
-                // Check if "all" is selected
-                const isAllSelected = serviceIds.length === 1 && serviceIds[0] === 'all';
+    showLoadingIndicator();
 
-                while (true) {
-                    const apiEndpoint = isAllSelected ?
-                        'https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved' :
-                        `https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&service_ids[]=${serviceIds.join('&service_ids[]=')}`;
+    try {
+        let incidents = [];
+        let offset = 0;
 
-                    const response = await fetch(`${apiEndpoint}&since=${new Date(startDate).toISOString()}&until=${new Date(endDate).toISOString()}&limit=100&offset=${offset}`, {
-                        headers: {
-                            'Authorization': `Token token=${TOKEN}`,
-                            'Accept': 'application/vnd.pagerduty+json'
-                        }
-                    });
+        // Determine if "all" services are selected
+        const isAllSelected = serviceIds.includes('all');
 
-                    const data = await response.json();
-                    console.log(data);
-                    if (data.incidents.length === 0) {
-                        break;
-                    }
+        while (true) {
+            const apiEndpoint = isAllSelected ?
+                'https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved' :
+                `https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&service_ids[]=${serviceIds.join('&service_ids[]=')}`;
 
-                    incidents = incidents.concat(data.incidents);
-                    offset += data.limit;
+            const response = await fetch(`${apiEndpoint}&since=${since.toISOString()}&until=${until.toISOString()}&limit=100&offset=${offset}`, {
+                headers: {
+                    'Authorization': `Token token=${TOKEN}`,
+                    'Accept': 'application/vnd.pagerduty+json'
                 }
+            });
 
-                // Update all incidents with fetched incidents for selected services
-                allIncidents = incidents;
-                console.log(incidents);
-                // Update the table and graphs with the fetched incidents
-                updateIncidentsTable(incidents, 1, 10, selectedEscalationPolicies);
-                updateIncidentChart(incidents, startDate, endDate);
-                updateMTTRChart(incidents, startDate, endDate);
-
-            } catch (error) {
-                console.error('Error fetching incidents:', error);
-            } finally {
-                hideLoadingIndicator();
+            if (!response.ok) {
+                throw new Error(`Error fetching incidents: ${response.statusText}`);
             }
+
+            const data = await response.json();
+
+            if (!data.incidents || data.incidents.length === 0) {
+                break;
+            }
+
+            incidents = incidents.concat(data.incidents);
+            offset += data.limit;
         }
+
+        // Update all incidents with fetched incidents for selected services
+        allIncidents = incidents;
+
+        // Update the table and graphs with the fetched incidents
+        updateIncidentsTable(incidents, 1, 10, selectedEscalationPolicies);
+        updateIncidentChart(incidents, since, until);
+        updateMTTRChart(incidents, since, until);
+
+    } catch (error) {
+        console.error('Error fetching incidents:', error);
+        alert('Failed to fetch incidents. Please try again later.');
+    } finally {
+        hideLoadingIndicator();
+    }
+}
 
         // Function to fetch incidents by a specific service
 
 
         // Add event listener for dropdown changes
         // Initialize Select2 with custom behavior for the "All" option
-function initializeSelect2(dropdown, placeholder) {
-    $(dropdown).select2({
-        placeholder: placeholder,
-        multiple: true,
-        allowClear: true,
-        matcher: function (params, option) {
-            if ($.trim(params.term) === '') {
-                return option;
-            }
-            if (option.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
-                return option;
-            }
-            return null;
+        function initializeSelect2(dropdown, placeholder) {
+            $(dropdown).select2({
+                placeholder: placeholder,
+                multiple: true,
+                allowClear: true,
+                matcher: function (params, option) {
+                    if ($.trim(params.term) === '') {
+                        return option;
+                    }
+                    if (option.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                        return option;
+                    }
+                    return null;
+                }
+            });
+
+            // Handle selection behavior
+            $(dropdown).on('select2:select', function (e) {
+                const selectedServiceIds = $(dropdown).val(); // Get all selected service IDs
+
+                if (selectedServiceIds.includes('all')) {
+                    // If "All" is selected, remove other selected services and keep only "All"
+                    $(dropdown).val(['all']).trigger('change');
+                    fetchIncidentsForMultipleServices(['all']); // Fetch data for all services
+                } else {
+                    // Fetch data for the selected services
+                    fetchIncidentsForMultipleServices(selectedServiceIds);
+                }
+            });
+
+            // Handle deselect behavior to allow removal of "All"
+            $(dropdown).on('select2:unselect', function (e) {
+                const selectedServiceIds = $(dropdown).val(); // Get updated selected service IDs
+
+                if (selectedServiceIds.length === 0) {
+                    // If all options are deselected, reset the dropdown
+                    $(dropdown).val(null).trigger('change');
+                } else if (!selectedServiceIds.includes('all')) {
+                    // If "All" is not selected, fetch data for remaining selected services
+                    fetchIncidentsForMultipleServices(selectedServiceIds);
+                }
+            });
         }
-    });
-
-    // Handle selection behavior
-    $(dropdown).on('select2:select', function (e) {
-        const selectedServiceIds = $(dropdown).val(); // Get all selected service IDs
-
-        if (selectedServiceIds.includes('all')) {
-            // If "All" is selected, remove other selected services and keep only "All"
-            $(dropdown).val(['all']).trigger('change');
-            fetchIncidentsForMultipleServices(['all']); // Fetch data for all services
-        } else {
-            // Fetch data for the selected services
-            fetchIncidentsForMultipleServices(selectedServiceIds);
-        }
-    });
-
-    // Handle deselect behavior to allow removal of "All"
-    $(dropdown).on('select2:unselect', function (e) {
-        const selectedServiceIds = $(dropdown).val(); // Get updated selected service IDs
-
-        if (selectedServiceIds.length === 0) {
-            // If all options are deselected, reset the dropdown
-            $(dropdown).val(null).trigger('change');
-        } else if (!selectedServiceIds.includes('all')) {
-            // If "All" is not selected, fetch data for remaining selected services
-            fetchIncidentsForMultipleServices(selectedServiceIds);
-        }
-    });
-}
 
         // Function to fetch incidents by a specific service
         async function fetchIncidentsByService(serviceId) {
@@ -840,30 +855,30 @@ function initializeSelect2(dropdown, placeholder) {
         let incidentsByService = [];
 
 
-        async function fetchIncidentsForShift(since, until) {
-            try {
-                let incidents = [];
-                let offset = 0;
-                while (true) {
-                    const response = await fetch(`https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&since=${since}&until=${until}&limit=100&offset=${offset}`, {
-                        headers: {
-                            'Authorization': `Token token=${TOKEN}`,
-                            'Accept': 'application/vnd.pagerduty+json'
-                        }
-                    });
-                    const data = await response.json();
-                    if (data.incidents.length === 0) {
-                        break;
-                    }
-                    incidents = incidents.concat(data.incidents);
-                    offset += data.limit;
-                }
-                return incidents;
-            } catch (error) {
-                console.error('Error fetching incidents:', error);
-                return [];
-            }
-        }
+        // async function fetchIncidentsForShift(since, until) {
+        //     try {
+        //         let incidents = [];
+        //         let offset = 0;
+        //         while (true) {
+        //             const response = await fetch(`https://api.pagerduty.com/incidents?statuses[]=triggered&statuses[]=acknowledged&statuses[]=resolved&since=${since}&until=${until}&limit=100&offset=${offset}`, {
+        //                 headers: {
+        //                     'Authorization': `Token token=${TOKEN}`,
+        //                     'Accept': 'application/vnd.pagerduty+json'
+        //                 }
+        //             });
+        //             const data = await response.json();
+        //             if (data.incidents.length === 0) {
+        //                 break;
+        //             }
+        //             incidents = incidents.concat(data.incidents);
+        //             offset += data.limit;
+        //         }
+        //         return incidents;
+        //     } catch (error) {
+        //         console.error('Error fetching incidents:', error);
+        //         return [];
+        //     }
+        // }
 
         function fetchIncidentsByEscalationPolicy() {
             selectedEscalationPolicies = $('#escalation_policies').val();
